@@ -1,4 +1,4 @@
-# Sample Polkadot Hardhat Project
+# Sample Polkadot Hardhat Project for EthLisbon
 
 This project demonstrates how to use Hardhat with Polkadot. It comes with a few sample contracts, Hardhat Ignition modules that deploy the contract and binaries needed for local deployment.
 
@@ -36,3 +36,9 @@ npx hardhat ignition deploy ./ignition/modules/MyToken.js --network westendAsset
 - [SubScan Block Explorer for Asset Hub Westend](https://assethub-westend.subscan.io/)
 - [Remix for Polkadot](https://remix.polkadot.io/)
 - [Old Smart Contract Docs](https://contracts.polkadot.io/)
+
+6) Support Channels:
+- [Discord](https://discord.gg/polkadot)
+- [Stack Exchange](https://substrate.meta.stackexchange.com/)
+- [Telegram](https://t.me/substratedevs)
+- [Reddit](https://www.reddit.com/r/Polkadot/)
