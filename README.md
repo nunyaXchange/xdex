@@ -22,10 +22,10 @@ Then configure the hardhat config as per documentation (linked below).
 4) Commands to run the project:
 
 ```bash
-git clone ...
+git clone git@github.com:UtkarshBhardwaj007/hardhat-polkadot-example.git
 npm install
 npx hardhat compile
-npx hardhat ignition deploy ./ignition/modules/MyToken.js --network westendAssetHub
+npx hardhat ignition deploy ./ignition/modules/MyToken.ts --network westendAssetHub
 ```
 
 1) Resources:
