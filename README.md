@@ -16,19 +16,19 @@ npm install -D @parity/hardhat-polkadot
 npx hardhat-polkadot init
 ```
 
-Then configure the hardhat config.
+Then configure the hardhat config as per documentation (linked below).
 
 
 4) Commands to run the project:
 
 ```bash
+git clone ...
+npm install
 npx hardhat compile
-npx hardhat node
-npx hardhat ignition deploy ./ignition/modules/MyToken.js --network localhost
 npx hardhat ignition deploy ./ignition/modules/MyToken.js --network westendAssetHub
 ```
 
-5) Resources:
+1) Resources:
 - [Polkadot Smart Contracts Documentation](https://papermoonio.github.io/polkadot-mkdocs/develop/smart-contracts/)
 - [Polkadot Smart Contracts Tutorial](https://papermoonio.github.io/polkadot-mkdocs/tutorials/smart-contracts/)
 - [Polkadot Smart Contract Basics](https://papermoonio.github.io/polkadot-mkdocs/polkadot-protocol/smart-contract-basics/)
@@ -37,7 +37,7 @@ npx hardhat ignition deploy ./ignition/modules/MyToken.js --network westendAsset
 - [Remix for Polkadot](https://remix.polkadot.io/)
 - [Old Smart Contract Docs](https://contracts.polkadot.io/)
 
-6) Support Channels:
+1) Support Channels:
 - [Discord](https://discord.gg/polkadot)
 - [Stack Exchange](https://substrate.meta.stackexchange.com/)
 - [Telegram](https://t.me/substratedevs)
