@@ -24,6 +24,7 @@ Then configure the hardhat config as per documentation (linked below).
 ```bash
 git clone git@github.com:UtkarshBhardwaj007/hardhat-polkadot-example.git
 npm install
+npx hardhat vars set WESTEND_HUB_PK (your westend asset hub private key)
 npx hardhat compile
 npx hardhat ignition deploy ./ignition/modules/MyToken.ts --network westendAssetHub
 ```
