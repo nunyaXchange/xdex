@@ -6,6 +6,7 @@ import "./openzeppelin/contracts/access/Ownable.sol";
 /**
  * @title PriceOracle
  * @dev Oracle contract for monitoring asset prices and collateral ratios
+ * @custom:polkadot-runtime This contract is designed for Polkadot Asset Hub
  */
 contract PriceOracle is Ownable {
     struct AssetPrice {
@@ -23,14 +24,15 @@ contract PriceOracle is Ownable {
     event PriceUpdated(address indexed asset, uint256 price, uint256 timestamp);
     event CollateralRatioUpdated(address indexed borrower, uint256 ratio);
 
-    constructor() Ownable() {}
+    /// @custom:selector constructor
+    /// @notice Contract constructor
+    constructor() public Ownable() {}
 
-    /**
-     * @dev Update price for an asset
-     * @param asset The asset address
-     * @param price The new price (scaled by 1e18)
-     */
-    function updateAssetPrice(address asset, uint256 price) external onlyOwner {
+    /// @custom:selector update_asset_price
+    /// @notice Update price for an asset
+    /// @param asset The asset address
+    /// @param price The new price (scaled by 1e18)
+    function updateAssetPrice(address asset, uint256 price) public onlyOwner {
         require(price > 0, "Price must be greater than 0");
         
         AssetPrice storage assetPrice = assetPrices[asset];
@@ -46,57 +48,64 @@ contract PriceOracle is Ownable {
         emit PriceUpdated(asset, price, block.timestamp);
     }
 
-    /**
-     * @dev Calculate collateral ratio for a borrower
-     * @param borrower The borrower's address
-     * @param collateralAsset The collateral asset address
-     * @param borrowedAsset The borrowed asset address
-     * @param collateralAmount The amount of collateral
-     * @param borrowedAmount The amount borrowed
-     * @return ratio The collateral ratio (scaled by 100)
-     */
+    /// @custom:selector get_asset_price
+    /// @notice Get the current price of an asset
+    /// @param asset The asset address
+    /// @return price The current price of the asset
+    function getAssetPrice(address asset) public view returns (uint256) {
+        AssetPrice memory assetPrice = assetPrices[asset];
+        require(assetPrice.active, "Asset price not available");
+        return assetPrice.price;
+    }
+
+    /// @custom:selector calculate_collateral_ratio
+    /// @notice Calculate collateral ratio for a borrower
+    /// @param borrower The borrower's address
+    /// @param collateralAsset The collateral asset address
+    /// @param debtAsset The debt asset address
+    /// @param collateralAmount The amount of collateral
+    /// @param debtAmount The amount of debt
+    /// @return ratio The calculated collateral ratio
     function calculateCollateralRatio(
         address borrower,
         address collateralAsset,
-        address borrowedAsset,
+        address debtAsset,
         uint256 collateralAmount,
-        uint256 borrowedAmount
-    ) external view returns (uint256 ratio) {
-        require(borrowedAmount > 0, "Borrowed amount must be greater than 0");
+        uint256 debtAmount
+    ) public returns (uint256) {
+        require(debtAmount > 0, "Debt amount must be greater than 0");
         
-        AssetPrice storage collateralPrice = assetPrices[collateralAsset];
-        AssetPrice storage borrowedPrice = assetPrices[borrowedAsset];
+        AssetPrice memory collateralPrice = assetPrices[collateralAsset];
+        AssetPrice memory debtPrice = assetPrices[debtAsset];
         
-        require(collateralPrice.active && borrowedPrice.active, "Prices not active");
+        require(collateralPrice.active && debtPrice.active, "Price data not available");
         
         uint256 collateralValue = (collateralAmount * collateralPrice.price) / 1e18;
-        uint256 borrowedValue = (borrowedAmount * borrowedPrice.price) / 1e18;
+        uint256 debtValue = (debtAmount * debtPrice.price) / 1e18;
         
-        // Calculate ratio (scaled by 100 for precision)
-        ratio = (collateralValue * 100) / borrowedValue;
+        uint256 ratio = (collateralValue * 1e18) / debtValue;
         
+        emit CollateralRatioUpdated(borrower, ratio);
         return ratio;
     }
 
-    /**
-     * @dev Get latest price for an asset
-     * @param asset The asset address
-     * @return price The latest price
-     */
-    function getLatestPrice(address asset) external view returns (uint256 price) {
+    /// @custom:selector get_latest_price
+    /// @notice Get latest price for an asset
+    /// @param asset The asset address
+    /// @return price The latest price
+    function getLatestPrice(address asset) public view returns (uint256 price) {
         AssetPrice storage assetPrice = assetPrices[asset];
         require(assetPrice.active, "Price not active");
         return assetPrice.price;
     }
 
-    /**
-     * @dev Check if an asset price is active and recent
-     * @param asset The asset address
-     * @return bool True if price is active and recent
-     */
-    function isPriceActive(address asset) external view returns (bool) {
+    /// @custom:selector is_price_active
+    /// @notice Check if an asset price is active and recent
+    /// @param asset The asset address
+    /// @return bool True if price is active and recent
+    function isPriceActive(address asset) public view returns (bool) {
         AssetPrice storage assetPrice = assetPrices[asset];
         return assetPrice.active && 
-               block.timestamp < assetPrice.lastUpdate + MIN_UPDATE_INTERVAL;
+            block.timestamp <= assetPrice.lastUpdate + MIN_UPDATE_INTERVAL;
     }
 }

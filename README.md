@@ -74,11 +74,16 @@ rm -rf cache-pvm artifacts-pvm
 ```
 
 ```bash
+# Setup compilers (make solc and resolc executable)
+chmod +x scripts/setup-compilers.sh && ./scripts/setup-compilers.sh
+```
+
+```bash
 # Compile contracts
 npx hardhat compile
 
-# Compile contracts to WASM for Westend Asset Hub
-npx hardhat compile:wasm
+# Compile contracts to PVM for Westend Asset Hub
+npx hardhat compile:pvm --contract PriceOracle
 
 # First, deploy the wrapped token to Westend Asset Hub
 npx hardhat run scripts/deploy-wrapped-token.ts --network westendAssetHub

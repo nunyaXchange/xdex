@@ -45,7 +45,10 @@ task("compile:pvm", "Compiles contracts to PVM using resolc")
         flattenedPath,
         "--bin",
         "--abi",
-        "--optimize"
+        "--optimize",
+        "--overwrite",
+        "--metadata",
+        "--metadata-literal"
       ], {
         encoding: 'utf8',
         cwd: process.cwd()
@@ -89,23 +92,20 @@ task("compile:pvm", "Compiles contracts to PVM using resolc")
 
       console.log("Got bytecode from solc, converting to PVM with resolc...");
 
-      // Now use resolc to convert to PVM
+      // Now compile to PVM with resolc
+      console.log("Compiling to PVM with resolc...");
       const resolcResult = spawnSync(resolcPath, [
         flattenedPath,
-        "-O3",
-        "--bin",
-        "--output-dir",
-        pvmDir,
-        "--solc",
-        solcPath,
-        "--overwrite"
+        "--optimization=3",  // Maximum optimization
+        "--overwrite",
+        "--output-dir", pvmDir,  // Output directory
+        "--bin"             // Generate binary output only
       ], {
         encoding: 'utf8',
         cwd: process.cwd(),
         env: {
           ...process.env,
-          RESOLC_SKIP_SOLC: "1",
-          RESOLC_SOLC: solcPath
+          PATH: `${process.env.PATH}:${path.dirname(solcPath)}`  // Add solc directory to PATH
         }
       });
 
