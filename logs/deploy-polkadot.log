@@ -1,0 +1,20 @@
+Deployer address: 5Gx2XSaAeNurrRiqWWW72D5uMgLTWAPjDoonNVzkkX3XWLz1
+Connecting to Westend Asset Hub...
+2025-05-11 10:09:20        REGISTRY: Unknown signed extensions StorageWeightReclaim found, treating them as no-effect
+2025-05-11 10:09:20        API/INIT: RPC methods not decorated: archive_v1_body, archive_v1_call, archive_v1_finalizedHeight, archive_v1_genesisHash, archive_v1_hashByHeight, archive_v1_header, archive_v1_stopStorage, archive_v1_storage, archive_v1_storageDiff, archive_v1_storageDiff_stopStorageDiff, chainHead_v1_body, chainHead_v1_call, chainHead_v1_continue, chainHead_v1_follow, chainHead_v1_header, chainHead_v1_stopOperation, chainHead_v1_storage, chainHead_v1_unfollow, chainHead_v1_unpin, chainSpec_v1_chainName, chainSpec_v1_genesisHash, chainSpec_v1_properties, transactionWatch_v1_submitAndWatch, transactionWatch_v1_unwatch, transaction_v1_broadcast, transaction_v1_stop
+Connected to Westend Asset Hub
+Compiling PriceOracle to PVM...
+Flattening contract...
+Contract flattened successfully
+Compiling with solc...
+Got bytecode from solc, converting to PVM with resolc...
+Successfully compiled to PVM
+Deploying PriceOracle...
+Account balance: 0
+Deployment parameters:
+Value (endowment): 1000000000
+Gas limit refTime: 10000000
+Gas limit proofSize: 10000000
+Storage deposit limit: 1000000000
+Total required: 2000000000
+Deployment failed: Error: Insufficient balance. Have: 0, Need: 2000000000

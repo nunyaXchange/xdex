@@ -108,7 +108,7 @@ npx hardhat run scripts/deploy-ethereum.ts --network sepolia
 - Block Explorer: https://blockscout-asset-hub.parity-chains-scw.parity.io
 
 
-You can get test WND tokens from the [Westend Faucet](https://faucet.westend.network).
+You can get test WND tokens from the [Westend Faucet](https://faucet.westend.network) or https://paritytech.github.io/polkadot-testnet-faucet/
 
 ## Contract Architecture
 

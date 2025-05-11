@@ -51,19 +51,38 @@ async function deployContract(
       }
 
       // Get the nonce for the account
-      const nonce = await api.rpc.system.accountNextIndex(account.address);
+      const nonceValue = await api.rpc.system.accountNextIndex(account.address);
+      const nonce = nonceValue.toNumber();
 
-      // Create the value parameter (endowment)
-      const value = '1000000000000';
+      // Check balance before deployment
+      const { data: { free: balance } } = await api.query.system.account(account.address);
+      console.log('Account balance:', balance.toString());
 
-      // Create the gas limit parameter
+      // Create the value parameter (endowment) with BN
+      const value = new BN('1000000000');  // Reduced to 1 billion units
+
+      // Create the gas limit parameter with BN
       const gasLimit = {
-        refTime: '1000000000',
-        proofSize: '1000000000'
+        refTime: new BN('10000000'),  // Reduced to 10 million
+        proofSize: new BN('10000000')  // Reduced to 10 million
       };
 
-      // Create the storage deposit limit parameter
-      const storageDepositLimit = '1000000000000';
+      // Create the storage deposit limit parameter with BN
+      const storageDepositLimit = new BN('1000000000');  // Reduced to 1 billion units
+
+      console.log('Deployment parameters:');
+      console.log('Value (endowment):', value.toString());
+      console.log('Gas limit refTime:', gasLimit.refTime.toString());
+      console.log('Gas limit proofSize:', gasLimit.proofSize.toString());
+      console.log('Storage deposit limit:', storageDepositLimit.toString());
+
+      // Check if balance is sufficient for deployment
+      const totalRequired = value.add(storageDepositLimit);
+      console.log('Total required:', totalRequired.toString());
+      
+      if (balance.lt(totalRequired)) {
+        throw new Error(`Insufficient balance. Have: ${balance.toString()}, Need: ${totalRequired.toString()}`);
+      }
 
       // Create the code parameter
       const code = api.createType('Bytes', pvmCode);
@@ -79,14 +98,8 @@ async function deployContract(
 
       console.log('Salt length:', salt.length);
       console.log('Salt bytes:', salt);
-      console.log('Sending transaction with nonce:', nonce.toString());
+      console.log('Sending transaction with nonce:', nonce);
       console.log('Gas limit:', gasLimit);
-
-      // Get the current block hash
-      const signedBlock = await api.rpc.chain.getBlock();
-      const blockHash = signedBlock.block.header.hash.toHex();
-      const { number } = await api.rpc.chain.getHeader(blockHash);
-      const blockNumber = number.toNumber();
 
       // Create the transaction
       const tx = api.tx.revive.instantiateWithCode(
@@ -101,14 +114,10 @@ async function deployContract(
       console.log('Transaction length:', tx.length);
       console.log('Transaction method:', tx.method.toHuman());
 
-      // Sign and send with specific block info
+      // Sign and send with minimal options and explicit mortality
       const unsub = await tx.signAndSend(account, { 
-        blockHash,
-        era: api.createType('ExtrinsicEra', { 
-          current: blockNumber,
-          period: 64 
-        }),
-        nonce: nonce
+        nonce,
+        era: 0 // Immortal transaction
       }, ({ events = [], status }) => {
         console.log(`Status: ${status.type}`);
         
@@ -156,6 +165,7 @@ async function main() {
     throw new Error('WESTEND_HUB_PK not found in environment variables');
   }
   const deployer = keyring.addFromUri(deployerKey);
+  console.log('Deployer address:', deployer.address);
 
   // Initialize connection to Polkadot node
   console.log('Connecting to Westend Asset Hub...');
