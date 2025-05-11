@@ -1,7 +1,8 @@
-Deployer address: 5Gx2XSaAeNurrRiqWWW72D5uMgLTWAPjDoonNVzkkX3XWLz1
+ npx hardhat run scripts/deploy-polkadot.ts --network westendAssetHub
+Deployer address: 5CLjhrXUVwZ6TE5JtinC4Ke6Y5BWb1FNVneaVcKFdphcefSv
 Connecting to Westend Asset Hub...
-2025-05-11 10:09:20        REGISTRY: Unknown signed extensions StorageWeightReclaim found, treating them as no-effect
-2025-05-11 10:09:20        API/INIT: RPC methods not decorated: archive_v1_body, archive_v1_call, archive_v1_finalizedHeight, archive_v1_genesisHash, archive_v1_hashByHeight, archive_v1_header, archive_v1_stopStorage, archive_v1_storage, archive_v1_storageDiff, archive_v1_storageDiff_stopStorageDiff, chainHead_v1_body, chainHead_v1_call, chainHead_v1_continue, chainHead_v1_follow, chainHead_v1_header, chainHead_v1_stopOperation, chainHead_v1_storage, chainHead_v1_unfollow, chainHead_v1_unpin, chainSpec_v1_chainName, chainSpec_v1_genesisHash, chainSpec_v1_properties, transactionWatch_v1_submitAndWatch, transactionWatch_v1_unwatch, transaction_v1_broadcast, transaction_v1_stop
+2025-05-11 10:59:35        REGISTRY: Unknown signed extensions StorageWeightReclaim found, treating them as no-effect
+2025-05-11 10:59:35        API/INIT: RPC methods not decorated: archive_v1_body, archive_v1_call, archive_v1_finalizedHeight, archive_v1_genesisHash, archive_v1_hashByHeight, archive_v1_header, archive_v1_stopStorage, archive_v1_storage, archive_v1_storageDiff, archive_v1_storageDiff_stopStorageDiff, chainHead_v1_body, chainHead_v1_call, chainHead_v1_continue, chainHead_v1_follow, chainHead_v1_header, chainHead_v1_stopOperation, chainHead_v1_storage, chainHead_v1_unfollow, chainHead_v1_unpin, chainSpec_v1_chainName, chainSpec_v1_genesisHash, chainSpec_v1_properties, transactionWatch_v1_submitAndWatch, transactionWatch_v1_unwatch, transaction_v1_broadcast, transaction_v1_stop
 Connected to Westend Asset Hub
 Compiling PriceOracle to PVM...
 Flattening contract...
@@ -10,11 +11,32 @@ Compiling with solc...
 Got bytecode from solc, converting to PVM with resolc...
 Successfully compiled to PVM
 Deploying PriceOracle...
-Account balance: 0
+Account balance: 9989146527268
 Deployment parameters:
-Value (endowment): 1000000000
-Gas limit refTime: 10000000
-Gas limit proofSize: 10000000
-Storage deposit limit: 1000000000
-Total required: 2000000000
-Deployment failed: Error: Insufficient balance. Have: 0, Need: 2000000000
+Value (endowment): 50000000
+Gas limit refTime: 500000
+Gas limit proofSize: 100000
+Storage deposit limit: 50000000
+Total required: 100000000
+Using nonce: 1
+Submitting instantiate transaction...
+Status: Ready
+Status: Broadcast
+Status: InBlock
+Event: balances.Withdraw: ["5CLjhrXUVwZ6TE5JtinC4Ke6Y5BWb1FNVneaVcKFdphcefSv",13275472732]
+Event: balances.Deposit: ["5CLjhrXUVwZ6TE5JtinC4Ke6Y5BWb1FNVneaVcKFdphcefSv",10000000000]
+Event: balances.Deposit: ["5EYCAe5cKPAoFh2HnQQvpKqRYZGqBpaA87u4Zzw89qPE58is",3275472732]
+Event: transactionPayment.TransactionFeePaid: ["5CLjhrXUVwZ6TE5JtinC4Ke6Y5BWb1FNVneaVcKFdphcefSv",3275472732,0]
+Event: system.ExtrinsicFailed: [{"module":{"index":60,"error":"0x1b000000"}},{"weight":{"refTime":1397743532,"proofSize":2075},"class":"Normal","paysFee":"Yes"}]
+Deployment failed: Error: Deployment failed: revive.CodeRejected: The contract failed to compile or is missing the correct entry points.,,A more detailed error can be found on the node console if debug messages are enabled,by supplying `-lruntime::revive=debug`.
+    at /Users/luke/code/clones/github/ltfschoen/hardhat-polkadot-example/scripts/deploy-polkadot.ts:122:24
+    at Array.forEach (<anonymous>)
+    at /Users/luke/code/clones/github/ltfschoen/hardhat-polkadot-example/scripts/deploy-polkadot.ts:107:20
+    at /Users/luke/code/clones/github/ltfschoen/hardhat-polkadot-example/node_modules/@polkadot/api/cjs/promise/decorateMethod.js:60:40
+    at /Users/luke/code/clones/github/ltfschoen/hardhat-polkadot-example/node_modules/@polkadot/util/cjs/nextTick.js:16:13
+Error: Deployment failed: revive.CodeRejected: The contract failed to compile or is missing the correct entry points.,,A more detailed error can be found on the node console if debug messages are enabled,by supplying `-lruntime::revive=debug`.
+    at /Users/luke/code/clones/github/ltfschoen/hardhat-polkadot-example/scripts/deploy-polkadot.ts:122:24
+    at Array.forEach (<anonymous>)
+    at /Users/luke/code/clones/github/ltfschoen/hardhat-polkadot-example/scripts/deploy-polkadot.ts:107:20
+    at /Users/luke/code/clones/github/ltfschoen/hardhat-polkadot-example/node_modules/@polkadot/api/cjs/promise/decorateMethod.js:60:40
+    at /Users/luke/code/clones/github/ltfschoen/hardhat-polkadot-example/node_modules/@polkadot/util/cjs/nextTick.js:16:13

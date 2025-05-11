@@ -1,6 +1,7 @@
 import { ApiPromise, WsProvider, Keyring } from '@polkadot/api';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import type { ExtrinsicStatus } from '@polkadot/types/interfaces';
+import type { DispatchError } from '@polkadot/types/interfaces';
 import * as dotenv from 'dotenv';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -55,20 +56,21 @@ async function deployContract(
       const nonce = nonceValue.toNumber();
 
       // Check balance before deployment
-      const { data: { free: balance } } = await api.query.system.account(account.address);
+      const accountInfo = await api.query.system.account(account.address);
+      const balance = (accountInfo as any).data.free;
       console.log('Account balance:', balance.toString());
 
       // Create the value parameter (endowment) with BN
-      const value = new BN('1000000000');  // Reduced to 1 billion units
+      const value = new BN('50000000');  // Further reduced to 50 million units
 
-      // Create the gas limit parameter with BN
+      // Create the gas limit parameter with BN - further reduced
       const gasLimit = {
-        refTime: new BN('10000000'),  // Reduced to 10 million
-        proofSize: new BN('10000000')  // Reduced to 10 million
+        refTime: new BN('500000'),   // Reduced to 500k
+        proofSize: new BN('100000')  // Reduced to 100k
       };
 
       // Create the storage deposit limit parameter with BN
-      const storageDepositLimit = new BN('1000000000');  // Reduced to 1 billion units
+      const storageDepositLimit = new BN('50000000');  // Reduced to 50 million units
 
       console.log('Deployment parameters:');
       console.log('Value (endowment):', value.toString());
@@ -87,65 +89,57 @@ async function deployContract(
       // Create the code parameter
       const code = api.createType('Bytes', pvmCode);
 
-      // Create the data parameter (constructor args)
-      const data = api.createType('Bytes', metadata.V3.spec.constructors[0].args);
+      // Create the salt parameter (32 bytes, all zeros)
+      const salt = api.createType('Bytes', new Uint8Array(32));
 
-      // Keep the working salt array
-      const salt = [
-        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
-        16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
-      ];
+      // Create the data parameter (empty constructor arguments)
+      const data = api.createType('Bytes', new Uint8Array());
 
-      console.log('Salt length:', salt.length);
-      console.log('Salt bytes:', salt);
-      console.log('Sending transaction with nonce:', nonce);
-      console.log('Gas limit:', gasLimit);
+      console.log('Using nonce:', nonce);
 
-      // Create the transaction
-      const tx = api.tx.revive.instantiateWithCode(
-        value,
-        gasLimit,
-        storageDepositLimit,
-        code,
-        data,
-        salt
-      );
-
-      console.log('Transaction length:', tx.length);
-      console.log('Transaction method:', tx.method.toHuman());
-
-      // Sign and send with minimal options and explicit mortality
-      const unsub = await tx.signAndSend(account, { 
-        nonce,
-        era: 0 // Immortal transaction
-      }, ({ events = [], status }) => {
-        console.log(`Status: ${status.type}`);
-        
-        if (status.isFinalized) {
-          console.log(`Transaction finalized`);
+      console.log('Submitting instantiate transaction...');
+      api.tx.revive
+        .instantiateWithCode(value, gasLimit, storageDepositLimit, code, data, salt)
+        .signAndSend(account, { nonce }, ({ events = [], status }) => {
+          console.log('Status:', status.type);
           
-          // Find instantiation event
-          const instantiateEvent = events.find(
-            ({ event }) =>
-              event.section === 'revive' && event.method === 'Instantiated'
-          );
+          if (status.isInBlock || status.isFinalized) {
+            events.forEach(({ event }) => {
+              const { section, method, data } = event;
+              console.log(`Event: ${section}.${method}:`, data.toString());
+              
+              if (section === 'system' && method === 'ExtrinsicFailed') {
+                const [dispatchError] = data as unknown as [DispatchError];
+                let errorInfo;
+                
+                if (dispatchError.isModule) {
+                  const decoded = api.registry.findMetaError(dispatchError.asModule);
+                  errorInfo = `${decoded.section}.${decoded.name}: ${decoded.docs}`;
+                } else {
+                  errorInfo = dispatchError.toString();
+                }
+                
+                reject(new Error(`Deployment failed: ${errorInfo}`));
+              }
+            });
 
-          if (instantiateEvent) {
-            const [deployer, contractAddress] = instantiateEvent.event.data;
-            console.log('Contract instantiated by:', deployer.toString());
-            console.log('Contract address:', contractAddress.toString());
-            unsub();
-            resolve(contractAddress.toString());
-          } else {
-            console.log('Events received:', events.map(({ event }) => `${event.section}.${event.method}`));
-            reject(new Error('Contract instantiation event not found'));
+            if (status.isFinalized) {
+              const instantiateEvent = events.find(({ event }) => 
+                event.section === 'revive' && event.method === 'Instantiated'
+              );
+
+              if (instantiateEvent) {
+                const [deployer, contractAddress] = instantiateEvent.event.data;
+                console.log('Contract instantiated by:', deployer.toString());
+                console.log('Contract address:', contractAddress.toString());
+                resolve(contractAddress.toString());
+              } else {
+                reject(new Error('Contract instantiation event not found'));
+              }
+            }
           }
-        } else if (status.isInvalid) {
-          reject(new Error(`Transaction failed with status: ${status.type}`));
-        } else {
-          console.log(`Current transaction status: ${status.type}`);
-        }
-      });
+        })
+        .catch(reject);
     } catch (error) {
       reject(error);
     }
