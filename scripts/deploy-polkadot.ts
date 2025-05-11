@@ -38,7 +38,9 @@ async function deployContract(
     throw new Error(`Metadata file not found at ${metadataPath}`);
   }
 
-  const pvmCode = fs.readFileSync(pvmPath);
+  const pvmCodeBuffer = fs.readFileSync(pvmPath);
+  console.log('PVM code size:', pvmCodeBuffer.length, 'bytes');
+
   const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
 
   return new Promise(async (resolve, reject) => {
@@ -51,51 +53,82 @@ async function deployContract(
         throw new Error('Revive module not available on this chain');
       }
 
-      // Get the nonce for the account
-      const nonceValue = await api.rpc.system.accountNextIndex(account.address);
-      const nonce = nonceValue.toNumber();
-
-      // Check balance before deployment
+      // Get account info and balance
       const accountInfo = await api.query.system.account(account.address);
       const balance = (accountInfo as any).data.free;
       console.log('Account balance:', balance.toString());
 
-      // Create the value parameter (endowment) with BN
-      const value = new BN('50000000');  // Further reduced to 50 million units
+      // Map the account first
+      console.log('Mapping account...');
+      const mapAccountTx = api.tx.revive.mapAccount();
+      
+      // Get nonce for mapping transaction
+      let nonce = await api.rpc.system.accountNextIndex(account.address);
+      console.log('Mapping tx nonce:', nonce.toString());
+      
+      const mapHash = await mapAccountTx.signAndSend(account, { nonce });
+      console.log('Account mapping tx hash:', mapHash.toString());
 
-      // Create the gas limit parameter with BN - further reduced
+      // Wait for the mapping to be included in a block
+      await new Promise(resolve => setTimeout(resolve, 12000)); // Wait 12s for block inclusion
+
+      // Get fresh nonce for deployment transaction
+      nonce = await api.rpc.system.accountNextIndex(account.address);
+      console.log('Deployment tx nonce:', nonce.toString());
+
+      // Get block weights and adjust our parameters
+      const blockWeights = await api.consts.system.blockWeights;
+      const maxBlock = JSON.parse((blockWeights as any).maxBlock.toString());
+      const maxExtrinsic = JSON.parse((blockWeights as any).perClass.normal.maxExtrinsic.toString());
+      
+      console.log('Block weight limits:', {
+        maxBlock,
+        maxExtrinsic
+      });
+
+      // Create the value parameter (endowment) with BN
+      const value = new BN('100000000000');  // 100 WND
+
+      // Create the gas limit parameter with BN - based on block limits
       const gasLimit = {
-        refTime: new BN('500000'),   // Reduced to 500k
-        proofSize: new BN('100000')  // Reduced to 100k
+        refTime: new BN(maxExtrinsic.refTime).divn(2),  // Use half of max extrinsic weight
+        proofSize: new BN(maxExtrinsic.proofSize).divn(2) // Use half of max proof size
       };
 
-      // Create the storage deposit limit parameter with BN
-      const storageDepositLimit = new BN('50000000');  // Reduced to 50 million units
+      // Calculate storage deposit based on code size with larger multiplier
+      const baseStorageDeposit = new BN('100000000000');  // 100 WND base deposit
+      const bytesMultiplier = new BN('1000000000');       // 1 WND per byte
+      const codeSize = new BN(pvmCodeBuffer.length);
+      const storageDepositLimit = baseStorageDeposit.add(
+        codeSize.mul(bytesMultiplier)
+      );
 
       console.log('Deployment parameters:');
       console.log('Value (endowment):', value.toString());
       console.log('Gas limit refTime:', gasLimit.refTime.toString());
       console.log('Gas limit proofSize:', gasLimit.proofSize.toString());
       console.log('Storage deposit limit:', storageDepositLimit.toString());
+      console.log('Contract code size:', codeSize.toString(), 'bytes');
 
       // Check if balance is sufficient for deployment
       const totalRequired = value.add(storageDepositLimit);
       console.log('Total required:', totalRequired.toString());
       
-      if (balance.lt(totalRequired)) {
+      if (balance.toBn().lt(totalRequired)) {
         throw new Error(`Insufficient balance. Have: ${balance.toString()}, Need: ${totalRequired.toString()}`);
       }
 
-      // Create the code parameter
-      const code = api.createType('Bytes', pvmCode);
+      // Create the code parameter using Buffer
+      const code = api.createType('Bytes', [...pvmCodeBuffer]);
 
-      // Create the salt parameter (32 bytes, all zeros)
-      const salt = api.createType('Bytes', new Uint8Array(32));
+      // Create a fixed 32-byte salt
+      const salt = api.createType('Bytes', Array(32).fill(0));  // 32 zero bytes
 
-      // Create the data parameter (empty constructor arguments)
-      const data = api.createType('Bytes', new Uint8Array());
+      // Empty constructor data since we don't need any arguments
+      const data = api.createType('Bytes', []);
 
-      console.log('Using nonce:', nonce);
+      console.log('Using nonce:', nonce.toString());
+      console.log('Salt length:', salt.length, 'bytes');
 
       console.log('Submitting instantiate transaction...');
       api.tx.revive
