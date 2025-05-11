@@ -1,34 +1,19 @@
+npx hardhat run scripts/deploy-ethereum.ts --network sepolia
 Deploying contracts with the account: 0x83De04f1aad8ABF1883166B14A29c084b7B8AB59
-PriceOracle deployed to: 0x20FCEa3d2a333072C2ee6075b1b50391B51AF59f
-MockERC20 deployed to: 0x22C00212d4056c8abBE5fe202972Ce14e1D42903
-LendingPool deployed to: 0x9a35beF196bAF508210270e0A9bB497a797f8bc8
-LendingPoolBridge deployed to: 0x923b9D6B3396D6F8e2BAc017BB356073d588B370
+PriceOracle deployed to: 0x5B00188B6bb9a8CA7Bb59Bc28D983e9e4CEC51ec
+MockERC20 deployed to: 0x1894b816249A46069E189860Be6ec6B08B3359bd
+LendingPool deployed to: 0xFD5bF0c2Fb2fF8339ee42258D83C8657d061B6C7
+LendingPoolBridge deployed to: 0xEF109773597e17371E3BCfCfc9a05A737958cF1A
 LendingPool ownership transferred to LendingPoolBridge
 Verifying contracts on Etherscan...
-Successfully submitted source code for contract
-contracts/PriceOracle.sol:PriceOracle at 0x20FCEa3d2a333072C2ee6075b1b50391B51AF59f
-for verification on the block explorer. Waiting for verification result...
+The contract 0x5B00188B6bb9a8CA7Bb59Bc28D983e9e4CEC51ec has already been verified on the block explorer. If you're trying to verify a partially verified contract, please use the --force flag.
+https://sepolia.etherscan.io/address/0x5B00188B6bb9a8CA7Bb59Bc28D983e9e4CEC51ec#code
 
-Successfully verified contract PriceOracle on the block explorer.
-https://sepolia.etherscan.io/address/0x20FCEa3d2a333072C2ee6075b1b50391B51AF59f#code
+The contract 0x1894b816249A46069E189860Be6ec6B08B3359bd has already been verified on the block explorer. If you're trying to verify a partially verified contract, please use the --force flag.
+https://sepolia.etherscan.io/address/0x1894b816249A46069E189860Be6ec6B08B3359bd#code
 
-Successfully submitted source code for contract
-contracts/test/MockERC20.sol:MockERC20 at 0x22C00212d4056c8abBE5fe202972Ce14e1D42903
-for verification on the block explorer. Waiting for verification result...
+The contract 0xFD5bF0c2Fb2fF8339ee42258D83C8657d061B6C7 has already been verified on the block explorer. If you're trying to verify a partially verified contract, please use the --force flag.
+https://sepolia.etherscan.io/address/0xFD5bF0c2Fb2fF8339ee42258D83C8657d061B6C7#code
 
-Successfully verified contract MockERC20 on the block explorer.
-https://sepolia.etherscan.io/address/0x22C00212d4056c8abBE5fe202972Ce14e1D42903#code
-
-Successfully submitted source code for contract
-contracts/LendingPool.sol:LendingPool at 0x9a35beF196bAF508210270e0A9bB497a797f8bc8
-for verification on the block explorer. Waiting for verification result...
-
-Successfully verified contract LendingPool on the block explorer.
-https://sepolia.etherscan.io/address/0x9a35beF196bAF508210270e0A9bB497a797f8bc8#code
-
-Successfully submitted source code for contract
-contracts/LendingPoolBridge.sol:LendingPoolBridge at 0x923b9D6B3396D6F8e2BAc017BB356073d588B370
-for verification on the block explorer. Waiting for verification result...
-
-Successfully verified contract LendingPoolBridge on the block explorer.
-https://sepolia.etherscan.io/address/0x923b9D6B3396D6F8e2BAc017BB356073d588B370#code
+The contract 0xEF109773597e17371E3BCfCfc9a05A737958cF1A has already been verified on the block explorer. If you're trying to verify a partially verified contract, please use the --force flag.
+https://sepolia.etherscan.io/address/0xEF109773597e17371E3BCfCfc9a05A737958cF1A#code

@@ -142,6 +142,16 @@ const config: HardhatUserConfig = {
       url: "https://westend-asset-hub-eth-rpc.polkadot.io",
       accounts: process.env.WESTEND_HUB_PK ? [process.env.WESTEND_HUB_PK] : [],
       chainId: 420420421
+    },
+    sepolia: {
+      url: process.env.SEPOLIA_URL,
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      chainId: 11155111
+    }
+  },
+  etherscan: {
+    apiKey: {
+      sepolia: process.env.ETHERSCAN_API_KEY || ''
     }
   }
 };
