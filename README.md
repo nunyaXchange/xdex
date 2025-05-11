@@ -148,6 +148,9 @@ npx hardhat run scripts/deploy.ts --network localNode
 npx hardhat test
 ```
 
+### Performance Comparison
+
+The performance of running contracts on Ethereum versus Westend Asset Hub is different. Ethereum is more expensive and slower, while Westend Asset Hub is faster and cheaper.
 
 ### Troubleshooting
 
