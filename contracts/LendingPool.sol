@@ -32,11 +32,13 @@ contract LendingPool is ReentrancyGuard, Ownable {
 
     event LenderDeposit(address indexed lender, uint256 amount);
     event LenderWithdraw(address indexed lender, uint256 amount);
-    event CollateralDeposit(address indexed borrower, uint256 amount);
-    event CollateralWithdraw(address indexed borrower, uint256 amount);
+    event BorrowerCollateralDeposit(address indexed borrower, uint256 amount);
+    event BorrowerCollateralWithdraw(address indexed borrower, uint256 amount);
     event BorrowerLiquidated(address indexed borrower, address indexed lender, uint256 amount);
-    event PositionLocked(address indexed user, bool isLender);
-    event PositionUnlocked(address indexed user, bool isLender);
+    event LenderPositionLocked(address indexed lender);
+    event LenderPositionUnlocked(address indexed lender);
+    event BorrowerPositionLocked(address indexed borrower);
+    event BorrowerPositionUnlocked(address indexed borrower);
 
     modifier onlyPolkaVMBridge() {
         require(msg.sender == polkaVMBridge, "Only PolkaVM bridge can call this");
@@ -80,7 +82,7 @@ contract LendingPool is ReentrancyGuard, Ownable {
         // Transfer collateral tokens from borrower to this contract
         require(IERC20(address(this)).transferFrom(msg.sender, address(this), amount), "Transfer failed");
         
-        emit CollateralDeposit(msg.sender, amount);
+        emit BorrowerCollateralDeposit(msg.sender, amount);
     }
 
     /**
@@ -92,7 +94,7 @@ contract LendingPool is ReentrancyGuard, Ownable {
         require(lenderPositions[lender].amount > 0, "No position to lock");
         
         lenderPositions[lender].isLocked = true;
-        emit PositionLocked(lender, true);
+        emit LenderPositionLocked(lender);
     }
 
     /**
@@ -104,7 +106,7 @@ contract LendingPool is ReentrancyGuard, Ownable {
         require(borrowerPositions[borrower].collateralAmount > 0, "No position to lock");
         
         borrowerPositions[borrower].isLocked = true;
-        emit PositionLocked(borrower, false);
+        emit BorrowerPositionLocked(borrower);
     }
 
     /**
@@ -157,6 +159,6 @@ contract LendingPool is ReentrancyGuard, Ownable {
         // Transfer excess collateral back to borrower
         require(IERC20(address(this)).transfer(borrower, amount), "Transfer failed");
         
-        emit CollateralWithdraw(borrower, amount);
+        emit BorrowerCollateralWithdraw(borrower, amount);
     }
 }

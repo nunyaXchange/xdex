@@ -47,7 +47,9 @@ describe("LendingPool", function () {
   describe("Lender Operations", function () {
     it("Should allow lender to deposit assets", async function () {
       const amount = ethers.utils.parseEther("100");
-      await lendingPool.connect(lender).depositLenderAssets(amount);
+      await expect(lendingPool.connect(lender).depositLenderAssets(amount))
+        .to.emit(lendingPool, "LenderDeposit")
+        .withArgs(lender.address, amount);
       const position = await lendingPool.lenderPositions(lender.address);
       expect(position.amount).to.equal(amount);
       expect(position.isLocked).to.equal(false);
@@ -56,7 +58,9 @@ describe("LendingPool", function () {
     it("Should not allow deposit when position is locked", async function () {
       const amount = ethers.utils.parseEther("100");
       await lendingPool.connect(lender).depositLenderAssets(amount);
-      await lendingPool.connect(polkaVMBridge).lockLenderPosition(lender.address);
+      await expect(lendingPool.connect(polkaVMBridge).lockLenderPosition(lender.address))
+        .to.emit(lendingPool, "LenderPositionLocked")
+        .withArgs(lender.address);
       
       await expect(
         lendingPool.connect(lender).depositLenderAssets(amount)
@@ -67,7 +71,9 @@ describe("LendingPool", function () {
   describe("Borrower Operations", function () {
     it("Should allow borrower to deposit collateral", async function () {
       const amount = ethers.utils.parseEther("100");
-      await lendingPool.connect(borrower).depositCollateral(amount);
+      await expect(lendingPool.connect(borrower).depositCollateral(amount))
+        .to.emit(lendingPool, "BorrowerCollateralDeposit")
+        .withArgs(borrower.address, amount);
       const position = await lendingPool.borrowerPositions(borrower.address);
       expect(position.collateralAmount).to.equal(amount);
       expect(position.isLocked).to.equal(false);
@@ -76,7 +82,9 @@ describe("LendingPool", function () {
     it("Should not allow deposit when position is locked", async function () {
       const amount = ethers.utils.parseEther("100");
       await lendingPool.connect(borrower).depositCollateral(amount);
-      await lendingPool.connect(polkaVMBridge).lockBorrowerPosition(borrower.address);
+      await expect(lendingPool.connect(polkaVMBridge).lockBorrowerPosition(borrower.address))
+        .to.emit(lendingPool, "BorrowerPositionLocked")
+        .withArgs(borrower.address);
       
       await expect(
         lendingPool.connect(borrower).depositCollateral(amount)
@@ -112,13 +120,17 @@ describe("LendingPool", function () {
       const liquidationAmount = ethers.utils.parseEther("50");
 
       await lendingPool.connect(borrower).depositCollateral(collateralAmount);
-      await lendingPool.connect(polkaVMBridge).lockBorrowerPosition(borrower.address);
+      await expect(lendingPool.connect(polkaVMBridge).lockBorrowerPosition(borrower.address))
+        .to.emit(lendingPool, "BorrowerPositionLocked")
+        .withArgs(borrower.address);
 
-      await lendingPool.connect(polkaVMBridge).executeLiquidation(
+      await expect(lendingPool.connect(polkaVMBridge).executeLiquidation(
         borrower.address,
         lender.address,
         liquidationAmount
-      );
+      ))
+        .to.emit(lendingPool, "BorrowerLiquidated")
+        .withArgs(borrower.address, lender.address, liquidationAmount);
 
       const borrowerPosition = await lendingPool.borrowerPositions(borrower.address);
       expect(borrowerPosition.collateralAmount).to.equal(collateralAmount.sub(liquidationAmount));
