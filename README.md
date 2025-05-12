@@ -157,18 +157,6 @@ npx hardhat test
 
 The performance of running contracts on Ethereum versus Westend Asset Hub is different. Ethereum is more expensive and slower, while Westend Asset Hub is faster and cheaper.
 
-### Troubleshooting
-
-1. PolkaVM Setup
-   - Ensure the eth-rpc adapter binary is in the correct location
-   - Check that @parity/hardhat-polkadot is installed
-   - Verify hardhat.config.ts has polkavm settings
-
-2. Deployment Issues
-   - Confirm you have sufficient WND tokens
-   - Check that your private key is correctly set in .env
-   - Verify network configuration in hardhat.config.ts
-
 ## License
 
 MIT
