@@ -82,11 +82,11 @@ chmod +x scripts/setup-compilers.sh && ./scripts/setup-compilers.sh
 # Compile contracts
 npx hardhat compile
 
-# Generate TypeScript typings for contracts
-npx hardhat typechain
-
 # Compile contracts to PVM for Westend Asset Hub
 npx hardhat compile:pvm --contract PriceOracle
+
+# Generate TypeScript typings for contracts (after compilation)
+npx hardhat typechain
 
 # First, deploy the wrapped token to Westend Asset Hub
 npx hardhat run scripts/deploy-wrapped-token.ts --network westendAssetHub
