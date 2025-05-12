@@ -40,7 +40,6 @@ contract LendingPoolBridge is Ownable {
 
     mapping(address => LenderOffer) public lenderOffers;
     mapping(address => BorrowerRequest) public borrowerRequests;
-    mapping(address => uint256) public liquidityPool;
 
     event LenderOfferCreated(address indexed lender, uint256 amount, uint256 lowerVTL, uint256 upperVTL);
     event BorrowerRequestCreated(address indexed borrower, uint256 collateralAmount, uint256 requestedAmount, uint256 lowerVTL, uint256 upperVTL);
@@ -89,7 +88,6 @@ contract LendingPoolBridge is Ownable {
     ) external {
         require(collateralAmount > 0 && requestedAmount > 0, "Amounts must be greater than 0");
         require(lowerVTL > 0 && upperVTL > lowerVTL, "Invalid VTL range");
-        require(!borrowerRequests[msg.sender].isActive, "Request already exists");
 
         borrowerRequests[msg.sender] = BorrowerRequest({
             collateralAmount: collateralAmount,
@@ -158,14 +156,12 @@ contract LendingPoolBridge is Ownable {
             "No VTL range overlap"
         );
 
-        // Calculate match amount based on available funds and requested amount
-        uint256 matchAmount = request.requestedAmount > offer.amount ? 
-            offer.amount : request.requestedAmount;
+        uint256 matchAmount = request.requestedAmount > offer.wrappedTokenBalance ? 
+            offer.wrappedTokenBalance : request.requestedAmount;
 
         // Update lender offer
-        offer.amount -= matchAmount;
         offer.wrappedTokenBalance -= matchAmount;
-        if (offer.amount == 0) {
+        if (offer.wrappedTokenBalance == 0) {
             offer.isActive = false;
         }
 
@@ -174,9 +170,6 @@ contract LendingPoolBridge is Ownable {
         if (request.requestedAmount == 0) {
             request.isActive = false;
         }
-
-        // Update liquidity pool
-        liquidityPool[lender] += matchAmount;
 
         emit MatchFound(lender, borrower, matchAmount);
     }

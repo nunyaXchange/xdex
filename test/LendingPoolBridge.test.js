@@ -168,8 +168,8 @@ describe("LendingPoolBridge", function () {
         .to.emit(lendingPoolBridge, "MatchFound")
         .withArgs(lender.address, borrower.address, ethers.parseEther("50"));
 
-      const liquidityPool = await lendingPoolBridge.liquidityPool(lender.address);
-      expect(liquidityPool).to.equal(ethers.parseEther("50")); // matched amount
+      const lenderOffer = await lendingPoolBridge.lenderOffers(lender.address);
+      expect(lenderOffer.wrappedTokenBalance).to.equal(ethers.parseEther("50")); // remaining balance after match
     });
 
     it("Should trigger liquidation when collateral ratio is too low", async function () {
