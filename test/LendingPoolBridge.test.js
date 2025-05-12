@@ -82,6 +82,9 @@ describe("LendingPoolBridge", function () {
   });
 
   describe("Proof Verification", function () {
+    // Note: In production, proof verification is handled by the Rust backend
+    // which validates cross-chain asset ownership. For testing purposes,
+    // we use empty proofs since the actual verification logic has been removed.
     it("Should verify lender proof and generate wrapped tokens", async function () {
       await lendingPoolBridge.connect(lender).createLenderOffer(
         ethers.parseEther("100"),
@@ -93,7 +96,7 @@ describe("LendingPoolBridge", function () {
         lender.address,
         true, // isLender
         ethers.parseEther("100"),
-        "0x1234" // mock proof
+        "0x" // Mock proof - in production this would be a cryptographic proof of asset ownership
       ))
         .to.emit(lendingPoolBridge, "LenderProofVerified")
         .withArgs(lender.address, ethers.parseEther("100"))
@@ -117,7 +120,7 @@ describe("LendingPoolBridge", function () {
         borrower.address,
         false, // isLender
         ethers.parseEther("100"),
-        "0x1234" // mock proof
+        "0x" // Mock proof - in production this would be a cryptographic proof of collateral ownership
       ))
         .to.emit(lendingPoolBridge, "BorrowerProofVerified")
         .withArgs(borrower.address, ethers.parseEther("100"))
@@ -142,7 +145,7 @@ describe("LendingPoolBridge", function () {
         lender.address,
         true,
         ethers.parseEther("100"),
-        "0x1234"
+        "0x" // Mock proof for testing
       );
 
       // Setup borrower
@@ -156,7 +159,7 @@ describe("LendingPoolBridge", function () {
         borrower.address,
         false,
         ethers.parseEther("100"),
-        "0x1234"
+        "0x" // Mock proof for testing
       );
     });
 
