@@ -49,74 +49,45 @@ task("compile:pvm", "Compiles contracts to PVM using resolc")
         "--overwrite",
         "--metadata",
         "--metadata-literal"
-      ], {
-        encoding: 'utf8',
-        cwd: process.cwd()
-      });
+      ]);
 
+      if (solcResult.error) {
+        throw solcResult.error;
+      }
+
+      // Check if solc compilation was successful
       if (solcResult.status !== 0) {
-        throw new Error(`solc failed: ${solcResult.stderr}`);
+        throw new Error(`solc compilation failed: ${solcResult.stderr.toString()}`);
       }
 
-      // Extract the binary output
-      const bytecode = solcResult.stdout.split('\n')
-        .find(line => line.startsWith('60'))
-        ?.trim();
+      console.log("Contract compiled successfully with solc");
 
-      if (!bytecode) {
-        throw new Error('No bytecode found in solc output');
-      }
-
-      // Extract the ABI
-      const abiMatch = solcResult.stdout.match(/Contract JSON ABI\n(.*)/);
-      if (!abiMatch) {
-        throw new Error('No ABI found in solc output');
-      }
-
-      // Create metadata JSON
-      const metadata = {
-        V3: {
-          spec: {
-            constructors: [{
-              args: JSON.parse(abiMatch[1])
-            }]
-          }
-        }
-      };
-
-      // Write metadata file
-      fs.writeFileSync(
-        path.join(pvmDir, `${taskArgs.contract}.flattened.sol:${taskArgs.contract}.json`),
-        JSON.stringify(metadata, null, 2)
-      );
-
-      console.log("Got bytecode from solc, converting to PVM with resolc...");
-
-      // Now compile to PVM with resolc
-      console.log("Compiling to PVM with resolc...");
+      // Now compile with resolc
+      console.log("Compiling with resolc...");
       const resolcResult = spawnSync(resolcPath, [
         flattenedPath,
-        "--optimization=3",  // Maximum optimization
+        "--bin",
+        "--abi",
+        "--optimize",
         "--overwrite",
-        "--output-dir", pvmDir,  // Output directory
-        "--bin"             // Generate binary output only
-      ], {
-        encoding: 'utf8',
-        cwd: process.cwd(),
-        env: {
-          ...process.env,
-          PATH: `${process.env.PATH}:${path.dirname(solcPath)}`  // Add solc directory to PATH
-        }
-      });
+        "--metadata",
+        "--metadata-literal"
+      ]);
 
-      if (resolcResult.status !== 0) {
-        throw new Error(`resolc failed: ${resolcResult.stderr}`);
+      if (resolcResult.error) {
+        throw resolcResult.error;
       }
 
-      console.log("Successfully compiled to PVM");
+      // Check if resolc compilation was successful
+      if (resolcResult.status !== 0) {
+        throw new Error(`resolc compilation failed: ${resolcResult.stderr.toString()}`);
+      }
+
+      console.log("Contract compiled successfully with resolc");
+
     } catch (error) {
-      console.error("Error in compilation:", error);
-      throw error;
+      console.error("Error during compilation:", error);
+      process.exit(1);
     }
   });
 

@@ -14,22 +14,24 @@ describe("LendingPool", function () {
     // Deploy mock ERC20 token
     const Token = await ethers.getContractFactory("MockERC20");
     token = await Token.deploy("Mock Token", "MTK");
+    await token.deployed();
     
     // Deploy LendingPool
     LendingPool = await ethers.getContractFactory("LendingPool");
     [owner, lender, borrower, polkaVMBridge] = await ethers.getSigners();
-    lendingPool = await LendingPool.deploy();
+    lendingPool = await LendingPool.deploy(token.address);
+    await lendingPool.deployed();
 
     // Set PolkaVM bridge address
     await lendingPool.setPolkaVMBridge(polkaVMBridge.address);
 
     // Mint tokens for testing
-    await token.mint(lender.address, ethers.utils.parseEther("1000"));
-    await token.mint(borrower.address, ethers.utils.parseEther("1000"));
+    await token.mint(lender.address, ethers.parseEther("1000"));
+    await token.mint(borrower.address, ethers.parseEther("1000"));
 
     // Approve LendingPool to spend tokens
-    await token.connect(lender).approve(lendingPool.address, ethers.utils.parseEther("1000"));
-    await token.connect(borrower).approve(lendingPool.address, ethers.utils.parseEther("1000"));
+    await token.connect(lender).approve(lendingPool.address, ethers.parseEther("1000"));
+    await token.connect(borrower).approve(lendingPool.address, ethers.parseEther("1000"));
   });
 
   describe("Deployment", function () {
@@ -40,11 +42,15 @@ describe("LendingPool", function () {
     it("Should set the right PolkaVM bridge", async function () {
       expect(await lendingPool.polkaVMBridge()).to.equal(polkaVMBridge.address);
     });
+
+    it("Should set the right token", async function () {
+      expect(await lendingPool.token()).to.equal(token.address);
+    });
   });
 
   describe("Lender Operations", function () {
     it("Should allow lender to deposit assets", async function () {
-      const amount = ethers.utils.parseEther("100");
+      const amount = ethers.parseEther("100");
       await expect(lendingPool.connect(lender).depositLenderAssets(amount))
         .to.emit(lendingPool, "LenderDeposit")
         .withArgs(lender.address, amount);
@@ -54,7 +60,7 @@ describe("LendingPool", function () {
     });
 
     it("Should not allow deposit when position is locked", async function () {
-      const amount = ethers.utils.parseEther("100");
+      const amount = ethers.parseEther("100");
       await lendingPool.connect(lender).depositLenderAssets(amount);
       await expect(lendingPool.connect(polkaVMBridge).lockLenderPosition(lender.address))
         .to.emit(lendingPool, "LenderPositionLocked")
@@ -68,7 +74,7 @@ describe("LendingPool", function () {
 
   describe("Borrower Operations", function () {
     it("Should allow borrower to deposit collateral", async function () {
-      const amount = ethers.utils.parseEther("100");
+      const amount = ethers.parseEther("100");
       await expect(lendingPool.connect(borrower).depositCollateral(amount))
         .to.emit(lendingPool, "BorrowerCollateralDeposit")
         .withArgs(borrower.address, amount);
@@ -78,7 +84,7 @@ describe("LendingPool", function () {
     });
 
     it("Should not allow deposit when position is locked", async function () {
-      const amount = ethers.utils.parseEther("100");
+      const amount = ethers.parseEther("100");
       await lendingPool.connect(borrower).depositCollateral(amount);
       await expect(lendingPool.connect(polkaVMBridge).lockBorrowerPosition(borrower.address))
         .to.emit(lendingPool, "BorrowerPositionLocked")
@@ -92,19 +98,21 @@ describe("LendingPool", function () {
 
   describe("PolkaVM Bridge Operations", function () {
     it("Should allow bridge to execute borrow", async function () {
-      const lendAmount = ethers.utils.parseEther("100");
-      const borrowAmount = ethers.utils.parseEther("50");
+      const lendAmount = ethers.parseEther("100");
+      const borrowAmount = ethers.parseEther("50");
 
       await lendingPool.connect(lender).depositLenderAssets(lendAmount);
       await lendingPool.connect(polkaVMBridge).lockLenderPosition(lender.address);
       await lendingPool.connect(borrower).depositCollateral(lendAmount);
       await lendingPool.connect(polkaVMBridge).lockBorrowerPosition(borrower.address);
 
-      await lendingPool.connect(polkaVMBridge).executeBorrow(
+      await expect(lendingPool.connect(polkaVMBridge).executeBorrow(
         borrower.address,
         lender.address,
         borrowAmount
-      );
+      ))
+        .to.emit(lendingPool, "BorrowExecuted")
+        .withArgs(borrower.address, lender.address, borrowAmount);
 
       const lenderPosition = await lendingPool.lenderPositions(lender.address);
       const borrowerPosition = await lendingPool.borrowerPositions(borrower.address);
@@ -114,8 +122,8 @@ describe("LendingPool", function () {
     });
 
     it("Should allow bridge to execute liquidation", async function () {
-      const collateralAmount = ethers.utils.parseEther("100");
-      const liquidationAmount = ethers.utils.parseEther("50");
+      const collateralAmount = ethers.parseEther("100");
+      const liquidationAmount = ethers.parseEther("50");
 
       await lendingPool.connect(borrower).depositCollateral(collateralAmount);
       await expect(lendingPool.connect(polkaVMBridge).lockBorrowerPosition(borrower.address))

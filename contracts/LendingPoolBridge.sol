@@ -1,23 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "./openzeppelin/contracts/access/Ownable.sol";
-import "./openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./openzeppelin/contracts/token/ERC20/extensions/ERC20Wrapper.sol";
-import "./openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./interfaces/IPriceOracle.sol";
 
-/**
- * @title LendingPoolBridge
- * @dev Bridge contract that handles the lending/borrowing matching logic
- */
-contract LendingPoolBridge is Ownable, ReentrancyGuard {
+contract LendingPoolBridge is Ownable {
     struct VTLRange {
-        uint256 lower;
-        uint256 upper;
+        uint256 lower; // Lower bound of VTL range (multiplied by 100)
+        uint256 upper; // Upper bound of VTL range (multiplied by 100)
     }
 
     struct LenderOffer {
-        address lender;
         uint256 amount;
         VTLRange vtlRange;
         bool isActive;
@@ -26,7 +20,6 @@ contract LendingPoolBridge is Ownable, ReentrancyGuard {
     }
 
     struct BorrowerRequest {
-        address borrower;
         uint256 collateralAmount;
         uint256 requestedAmount;
         VTLRange vtlRange;
@@ -35,166 +28,151 @@ contract LendingPoolBridge is Ownable, ReentrancyGuard {
         uint256 wrappedCollateralBalance;
     }
 
-    // Mapping to track lender offers
-    mapping(address => LenderOffer) public lenderOffers;
-    
-    // Mapping to track borrower requests
-    mapping(address => BorrowerRequest) public borrowerRequests;
+    IPriceOracle public immutable oracle;
+    address public immutable lendingPoolEVMContractAddress;
+    IERC20 public immutable wrappedToken;
 
-    // Liquidity pool for wrapped tokens
+    mapping(address => LenderOffer) public lenderOffers;
+    mapping(address => BorrowerRequest) public borrowerRequests;
     mapping(address => uint256) public liquidityPool;
 
-    // Oracle contract address
-    address public oracle;
-    
-    // EVM chain contract address (LendingPool)
-    address public evmContractAddress;
-    
-    // Wrapped token contract
-    IERC20 public wrappedToken;
+    event LenderOfferCreated(address indexed lender, uint256 amount, uint256 lowerVTL, uint256 upperVTL);
+    event BorrowerRequestCreated(address indexed borrower, uint256 collateralAmount, uint256 requestedAmount, uint256 lowerVTL, uint256 upperVTL);
+    event BorrowerCollateralRatioUpdated(address indexed borrower, uint256 newRatio);
+    event LenderProofVerified(address indexed lender, uint256 amount);
+    event BorrowerProofVerified(address indexed borrower, uint256 amount);
+    event LenderWrappedTokensGenerated(address indexed lender, uint256 amount);
+    event BorrowerWrappedTokensGenerated(address indexed borrower, uint256 amount);
+    event MatchFound(address indexed lender, address indexed borrower, uint256 amount);
 
-    event LenderOfferCreated(address indexed lender, uint256 amount, uint256 vtlLower, uint256 vtlUpper);
-    event BorrowerRequestCreated(address indexed borrower, uint256 collateral, uint256 requested, uint256 vtlLower, uint256 vtlUpper);
-    event MatchCreated(address indexed lender, address indexed borrower, uint256 amount);
-    event CollateralRatioUpdated(address indexed borrower, uint256 ratio);
-    event ProofVerified(address indexed user, bool isLender, uint256 amount);
-    event WrappedTokensGenerated(address indexed user, uint256 amount);
-    event LiquidationTriggered(address indexed borrower, address indexed lender, uint256 amount);
-
-    modifier onlyOracle() {
-        require(msg.sender == oracle, "Only oracle can call this");
-        _;
-    }
-
-    constructor(address _oracle, address _evmContractAddress, address _wrappedToken) Ownable() {
-        oracle = _oracle;
-        evmContractAddress = _evmContractAddress;
+    constructor(
+        address _oracle,
+        address _lendingPoolEVMContractAddress,
+        address _wrappedToken
+    ) Ownable(msg.sender) {
+        oracle = IPriceOracle(_oracle);
+        lendingPoolEVMContractAddress = _lendingPoolEVMContractAddress;
         wrappedToken = IERC20(_wrappedToken);
     }
 
-    /**
-     * @dev Create a lending offer with VTL range
-     * @param amount Amount willing to lend
-     * @param vtlLower Lower bound of VTL range
-     * @param vtlUpper Upper bound of VTL range
-     */
-    function createLenderOffer(uint256 amount, uint256 vtlLower, uint256 vtlUpper) external nonReentrant {
-        require(vtlLower < vtlUpper, "Invalid VTL range");
+    function createLenderOffer(
+        uint256 amount,
+        uint256 lowerVTL,
+        uint256 upperVTL
+    ) external {
         require(amount > 0, "Amount must be greater than 0");
-        require(wrappedToken.transferFrom(msg.sender, address(this), amount), "Token transfer failed");
-        
+        require(lowerVTL < upperVTL, "Invalid VTL range");
+        require(!lenderOffers[msg.sender].isActive, "Offer already exists");
+
         lenderOffers[msg.sender] = LenderOffer({
-            lender: msg.sender,
             amount: amount,
-            vtlRange: VTLRange(vtlLower, vtlUpper),
+            vtlRange: VTLRange({
+                lower: lowerVTL,
+                upper: upperVTL
+            }),
             isActive: true,
-            proofVerified: true, // Auto-verify since we have the tokens
-            wrappedTokenBalance: amount
+            proofVerified: false,
+            wrappedTokenBalance: 0
         });
 
-        emit LenderOfferCreated(msg.sender, amount, vtlLower, vtlUpper);
+        emit LenderOfferCreated(msg.sender, amount, lowerVTL, upperVTL);
     }
 
-    /**
-     * @dev Create a borrowing request with VTL range
-     * @param collateralAmount Amount of collateral
-     * @param requestedAmount Amount wanting to borrow
-     * @param vtlLower Lower bound of VTL range
-     * @param vtlUpper Upper bound of VTL range
-     */
     function createBorrowerRequest(
         uint256 collateralAmount,
         uint256 requestedAmount,
-        uint256 vtlLower,
-        uint256 vtlUpper
-    ) external nonReentrant {
-        require(vtlLower < vtlUpper, "Invalid VTL range");
+        uint256 lowerVTL,
+        uint256 upperVTL
+    ) external {
         require(collateralAmount > 0, "Collateral must be greater than 0");
         require(requestedAmount > 0, "Requested amount must be greater than 0");
-        require(wrappedToken.transferFrom(msg.sender, address(this), collateralAmount), "Collateral transfer failed");
-        
+        require(lowerVTL < upperVTL, "Invalid VTL range");
+        require(!borrowerRequests[msg.sender].isActive, "Request already exists");
+
         borrowerRequests[msg.sender] = BorrowerRequest({
-            borrower: msg.sender,
             collateralAmount: collateralAmount,
             requestedAmount: requestedAmount,
-            vtlRange: VTLRange(vtlLower, vtlUpper),
+            vtlRange: VTLRange({
+                lower: lowerVTL,
+                upper: upperVTL
+            }),
             isActive: true,
-            proofVerified: true, // Auto-verify since we have the collateral
-            wrappedCollateralBalance: collateralAmount
+            proofVerified: false,
+            wrappedCollateralBalance: 0
         });
 
-        emit BorrowerRequestCreated(msg.sender, collateralAmount, requestedAmount, vtlLower, vtlUpper);
+        emit BorrowerRequestCreated(msg.sender, collateralAmount, requestedAmount, lowerVTL, upperVTL);
     }
 
-    /**
-     * @dev Check if VTL ranges overlap and execute match
-     * @param lender Lender address
-     * @param borrower Borrower address
-     */
-    function executeMatch(address lender, address borrower) external nonReentrant returns (bool) {
+    function verifyProof(
+        address account,
+        bool isLender,
+        uint256 amount,
+        bytes memory proof
+    ) external {
+        if (isLender) {
+            require(lenderOffers[account].isActive, "No active lender offer");
+            require(!lenderOffers[account].proofVerified, "Proof already verified");
+            require(amount == lenderOffers[account].amount, "Amount mismatch");
+
+            _verifyProofInRust(account, proof);
+            lenderOffers[account].proofVerified = true;
+            lenderOffers[account].wrappedTokenBalance = amount;
+
+            emit LenderProofVerified(account, amount);
+            emit LenderWrappedTokensGenerated(account, amount);
+        } else {
+            require(borrowerRequests[account].isActive, "No active borrower request");
+            require(!borrowerRequests[account].proofVerified, "Proof already verified");
+            require(amount == borrowerRequests[account].collateralAmount, "Amount mismatch");
+
+            _verifyProofInRust(account, proof);
+            borrowerRequests[account].proofVerified = true;
+            borrowerRequests[account].wrappedCollateralBalance = amount;
+
+            emit BorrowerProofVerified(account, amount);
+            emit BorrowerWrappedTokensGenerated(account, amount);
+        }
+    }
+
+    function findMatch(address lender, address borrower) external {
         LenderOffer storage offer = lenderOffers[lender];
         BorrowerRequest storage request = borrowerRequests[borrower];
-        
-        require(offer.isActive && request.isActive, "Offers must be active");
-        require(offer.proofVerified && request.proofVerified, "Proofs must be verified");
-        
-        if (!_doVTLRangesOverlap(offer.vtlRange, request.vtlRange)) {
-            return false;
-        }
 
-        // Calculate the matched amount
-        uint256 matchedAmount = _min(offer.amount, request.requestedAmount);
-        
-        // Update positions
-        offer.amount -= matchedAmount;
-        if (offer.amount == 0) {
-            offer.isActive = false;
-        }
-        
-        request.requestedAmount -= matchedAmount;
-        if (request.requestedAmount == 0) {
-            request.isActive = false;
-        }
-        
-        // Transfer matched amount to borrower
-        require(wrappedToken.transfer(borrower, matchedAmount), "Match transfer failed");
-        
-        emit MatchCreated(lender, borrower, matchedAmount);
-        return true;
+        require(offer.isActive && offer.proofVerified, "Invalid lender offer");
+        require(request.isActive && request.proofVerified, "Invalid borrower request");
+
+        // Check VTL range overlap
+        require(
+            offer.vtlRange.lower <= request.vtlRange.upper &&
+            offer.vtlRange.upper >= request.vtlRange.lower,
+            "No VTL range overlap"
+        );
+
+        uint256 matchedAmount = request.requestedAmount;
+        require(offer.wrappedTokenBalance >= matchedAmount, "Insufficient lender balance");
+
+        // Update balances
+        offer.wrappedTokenBalance -= matchedAmount;
+        liquidityPool[lender] += matchedAmount;
+
+        emit MatchFound(lender, borrower, matchedAmount);
     }
 
-    /**
-     * @dev Trigger liquidation of a borrower's position
-     * @param borrower The borrower to liquidate
-     * @param lender The lender who will receive the collateral
-     */
-    function triggerLiquidation(address borrower, address lender) external onlyOracle {
-        BorrowerRequest storage request = borrowerRequests[borrower];
-        require(request.isActive && request.proofVerified, "Invalid borrower position");
-        
-        uint256 collateralToLiquidate = request.collateralAmount;
-        
-        // Transfer collateral to lender
-        require(wrappedToken.transfer(lender, collateralToLiquidate), "Liquidation transfer failed");
-        
-        // Close the position
-        request.isActive = false;
-        request.collateralAmount = 0;
-        
-        emit LiquidationTriggered(borrower, lender, collateralToLiquidate);
+    function updateCollateralRatio(address borrower, uint256 newRatio) external {
+        require(msg.sender == address(oracle), "Only oracle can update ratio");
+        require(borrowerRequests[borrower].isActive, "No active request");
+
+        emit BorrowerCollateralRatioUpdated(borrower, newRatio);
+
+        // Check if liquidation is needed
+        if (newRatio < borrowerRequests[borrower].vtlRange.lower) {
+            borrowerRequests[borrower].isActive = false;
+        }
     }
 
-    /**
-     * @dev Check if two VTL ranges overlap
-     */
-    function _doVTLRangesOverlap(VTLRange memory range1, VTLRange memory range2) internal pure returns (bool) {
-        return range1.lower <= range2.upper && range2.lower <= range1.upper;
-    }
-
-    /**
-     * @dev Return minimum of two numbers
-     */
-    function _min(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a < b ? a : b;
+    function _verifyProofInRust(address account, bytes memory proof) internal pure {
+        // This will be replaced with actual Rust verification
+        require(proof.length > 0, "Invalid proof");
     }
 }

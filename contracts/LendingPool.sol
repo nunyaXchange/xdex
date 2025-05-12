@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
 import "./openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -29,6 +29,9 @@ contract LendingPool is ReentrancyGuard, Ownable {
 
     // Contract address on PolkaVM that is authorized to trigger actions
     address public polkaVMBridge;
+    
+    // The ERC20 token used for lending and borrowing
+    IERC20 public token;
 
     event LenderDeposit(address indexed lender, uint256 amount);
     event LenderWithdraw(address indexed lender, uint256 amount);
@@ -39,17 +42,21 @@ contract LendingPool is ReentrancyGuard, Ownable {
     event LenderPositionUnlocked(address indexed lender);
     event BorrowerPositionLocked(address indexed borrower);
     event BorrowerPositionUnlocked(address indexed borrower);
+    event BorrowExecuted(address indexed borrower, address indexed lender, uint256 amount);
 
     modifier onlyPolkaVMBridge() {
         require(msg.sender == polkaVMBridge, "Only PolkaVM bridge can call this");
         _;
     }
 
-    constructor() Ownable() {
+    constructor(address _token) {
+        require(_token != address(0), "Token address cannot be zero");
+        token = IERC20(_token);
         polkaVMBridge = msg.sender;
     }
 
     function setPolkaVMBridge(address _bridge) external onlyOwner {
+        require(_bridge != address(0), "Bridge address cannot be zero");
         polkaVMBridge = _bridge;
     }
 
@@ -64,7 +71,7 @@ contract LendingPool is ReentrancyGuard, Ownable {
         lenderPositions[msg.sender].amount += amount;
         
         // Transfer tokens from lender to this contract
-        require(IERC20(address(this)).transferFrom(msg.sender, address(this), amount), "Transfer failed");
+        require(token.transferFrom(msg.sender, address(this), amount), "Transfer failed");
         
         emit LenderDeposit(msg.sender, amount);
     }
@@ -80,7 +87,7 @@ contract LendingPool is ReentrancyGuard, Ownable {
         borrowerPositions[msg.sender].collateralAmount += amount;
         
         // Transfer collateral tokens from borrower to this contract
-        require(IERC20(address(this)).transferFrom(msg.sender, address(this), amount), "Transfer failed");
+        require(token.transferFrom(msg.sender, address(this), amount), "Transfer failed");
         
         emit BorrowerCollateralDeposit(msg.sender, amount);
     }
@@ -110,7 +117,7 @@ contract LendingPool is ReentrancyGuard, Ownable {
     }
 
     /**
-     * @dev Execute a borrowing operation (called by PolkaVM bridge)
+     * @dev Execute a borrow operation (called by PolkaVM bridge)
      * @param borrower The borrower's address
      * @param lender The lender's address
      * @param amount The amount to borrow
@@ -124,14 +131,16 @@ contract LendingPool is ReentrancyGuard, Ownable {
         borrowerPositions[borrower].borrowedAmount += amount;
         
         // Transfer tokens from contract to borrower
-        require(IERC20(address(this)).transfer(borrower, amount), "Transfer failed");
+        require(token.transfer(borrower, amount), "Transfer failed");
+        
+        emit BorrowExecuted(borrower, lender, amount);
     }
 
     /**
-     * @dev Execute liquidation of a borrower (called by PolkaVM bridge)
-     * @param borrower The borrower to liquidate
-     * @param lender The lender to receive the liquidated collateral
-     * @param amount The amount of collateral to liquidate
+     * @dev Execute liquidation of a borrower's position (called by PolkaVM bridge)
+     * @param borrower The borrower's address
+     * @param lender The lender's address
+     * @param amount The amount to liquidate
      */
     function executeLiquidation(address borrower, address lender, uint256 amount) external onlyPolkaVMBridge {
         require(borrowerPositions[borrower].isLocked, "Borrower position not locked");
@@ -140,7 +149,7 @@ contract LendingPool is ReentrancyGuard, Ownable {
         borrowerPositions[borrower].collateralAmount -= amount;
         
         // Transfer liquidated collateral to lender
-        require(IERC20(address(this)).transfer(lender, amount), "Transfer failed");
+        require(token.transfer(lender, amount), "Transfer failed");
         
         emit BorrowerLiquidated(borrower, lender, amount);
     }
@@ -157,7 +166,7 @@ contract LendingPool is ReentrancyGuard, Ownable {
         borrowerPositions[borrower].collateralAmount -= amount;
         
         // Transfer excess collateral back to borrower
-        require(IERC20(address(this)).transfer(borrower, amount), "Transfer failed");
+        require(token.transfer(borrower, amount), "Transfer failed");
         
         emit BorrowerCollateralWithdraw(borrower, amount);
     }
