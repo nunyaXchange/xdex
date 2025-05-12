@@ -22,14 +22,15 @@ contract PriceOracle is Ownable {
     /// @custom:selector init
     /// @custom:payable
     /// @custom:mutates-storage
-    constructor() payable Ownable() {}
+    constructor() payable {}
 
     /// @custom:selector set
     /// @custom:mutates-storage
     function updateAssetPrice(address asset, uint256 price) external onlyOwner {
+        AssetPrice storage assetPrice = assetPrices[asset];
         require(
-            block.timestamp >= assetPrices[asset].lastUpdate + MIN_UPDATE_INTERVAL || 
-            !assetPrices[asset].active,
+            !assetPrice.active || 
+            block.timestamp >= assetPrice.lastUpdate + MIN_UPDATE_INTERVAL,
             "Too soon to update"
         );
 
