@@ -43,140 +43,133 @@ async function deployContract(
 
   const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
 
-  return new Promise(async (resolve, reject) => {
-    try {
-      // Wait for the API to be ready
-      await api.isReady;
+  // Check account balance
+  const accountInfo = await api.query.system.account(account.address);
+  const balance = (accountInfo as any).data.free;
+  console.log('Account balance:', balance.toString());
 
-      // Check if revive module is available
-      if (!api.tx.revive) {
-        throw new Error('Revive module not available on this chain');
-      }
+  // Get nonce for deployment
+  const nonce = await api.rpc.system.accountNextIndex(account.address);
+  console.log('Deployment tx nonce:', nonce.toString());
 
-      // Get account info and balance
-      const accountInfo = await api.query.system.account(account.address);
-      const balance = (accountInfo as any).data.free;
-      console.log('Account balance:', balance.toString());
+  // Log available pallets and queries for debugging
+  console.log('Available pallets:', Object.keys(api.tx).join(', '));
+  console.log('Available queries:', Object.keys(api.query).join(', '));
 
-      // Map the account first
-      console.log('Mapping account...');
-      const mapAccountTx = api.tx.revive.mapAccount();
-      
-      // Get nonce for mapping transaction
-      let nonce = await api.rpc.system.accountNextIndex(account.address);
-      console.log('Mapping tx nonce:', nonce.toString());
-      
-      const mapHash = await mapAccountTx.signAndSend(account, { nonce });
-      console.log('Account mapping tx hash:', mapHash.toString());
+  // Get block weights and adjust parameters
+  const blockWeights = await api.consts.system.blockWeights;
+  const maxBlock = JSON.parse((blockWeights as any).maxBlock.toString());
+  const maxExtrinsic = JSON.parse((blockWeights as any).perClass.normal.maxExtrinsic.toString());
+  
+  console.log('Block weight limits:', {
+    maxBlock,
+    maxExtrinsic
+  });
 
-      // Wait for the mapping to be included in a block
-      await new Promise(resolve => setTimeout(resolve, 12000)); // Wait 12s for block inclusion
+  // Create deployment parameters
+  const value = new BN('100000000000');  // 100 WND
+  const gasLimit = {
+    refTime: new BN(maxExtrinsic.refTime).divn(2),
+    proofSize: new BN(maxExtrinsic.proofSize).divn(2)
+  };
+  const baseStorageDeposit = new BN('100000000000');
+  const bytesMultiplier = new BN('1000000000');
+  const codeSize = new BN(pvmCodeBuffer.length);
+  const storageDepositLimit = baseStorageDeposit.add(
+    codeSize.mul(bytesMultiplier)
+  );
 
-      // Get fresh nonce for deployment transaction
-      nonce = await api.rpc.system.accountNextIndex(account.address);
-      console.log('Deployment tx nonce:', nonce.toString());
+  console.log('Deployment parameters:');
+  console.log('Value (endowment):', value.toString());
+  console.log('Gas limit refTime:', gasLimit.refTime.toString());
+  console.log('Gas limit proofSize:', gasLimit.proofSize.toString());
+  console.log('Storage deposit limit:', storageDepositLimit.toString());
+  console.log('Contract code size:', codeSize.toString(), 'bytes');
 
-      // Get block weights and adjust our parameters
-      const blockWeights = await api.consts.system.blockWeights;
-      const maxBlock = JSON.parse((blockWeights as any).maxBlock.toString());
-      const maxExtrinsic = JSON.parse((blockWeights as any).perClass.normal.maxExtrinsic.toString());
-      
-      console.log('Block weight limits:', {
-        maxBlock,
-        maxExtrinsic
-      });
+  const totalRequired = value.add(storageDepositLimit);
+  console.log('Total required:', totalRequired.toString());
+  
+  if (balance.toBn().lt(totalRequired)) {
+    throw new Error(`Insufficient balance. Have: ${balance.toString()}, Need: ${totalRequired.toString()}`);
+  }
 
-      // Create the value parameter (endowment) with BN
-      const value = new BN('100000000000');  // 100 WND
+  // Prepare contract deployment parameters
+  const code = api.createType('Bytes', [...pvmCodeBuffer]);
+  const salt = api.createType('Bytes', Array(32).fill(0));
+  const data = api.createType('Bytes', []);
 
-      // Create the gas limit parameter with BN - based on block limits
-      const gasLimit = {
-        refTime: new BN(maxExtrinsic.refTime).divn(2),  // Use half of max extrinsic weight
-        proofSize: new BN(maxExtrinsic.proofSize).divn(2) // Use half of max proof size
-      };
+  console.log('Using nonce:', nonce.toString());
+  console.log('Salt length:', salt.length, 'bytes');
 
-      // Calculate storage deposit based on code size with larger multiplier
-      const baseStorageDeposit = new BN('100000000000');  // 100 WND base deposit
-      const bytesMultiplier = new BN('1000000000');       // 1 WND per byte
-      const codeSize = new BN(pvmCodeBuffer.length);
-      const storageDepositLimit = baseStorageDeposit.add(
-        codeSize.mul(bytesMultiplier)
+  // Deploy the contract
+  console.log('Submitting instantiate transaction...');
+  return new Promise<string>((resolve, reject) => {
+    if (!api.tx.revive) {
+      reject(new Error('Revive pallet not found. Available pallets: ' + Object.keys(api.tx).join(', ')));
+      return;
+    }
+
+    api.tx.revive
+      .instantiateWithCode(value, gasLimit, storageDepositLimit, code, data, salt)
+      .signAndSend(account, { nonce }, handleDeploymentCallback(resolve, reject));
+  });
+}
+
+function handleDeploymentCallback(resolve: (address: string) => void, reject: (error: Error) => void) {
+  return ({ status, events = [], dispatchError }: any) => {
+    console.log('Status:', status.type);
+
+    events.forEach(({ event }: any) => {
+      console.log('Event:', `${event.section}.${event.method}:`, event.data.toString());
+    });
+
+    if (status.isFinalized) {
+      // Look for NewAccount event which contains the contract address
+      const newAccountEvent = events.find(
+        ({ event }: any) => 
+          event.section === 'system' && 
+          event.method === 'NewAccount'
       );
 
-      console.log('Deployment parameters:');
-      console.log('Value (endowment):', value.toString());
-      console.log('Gas limit refTime:', gasLimit.refTime.toString());
-      console.log('Gas limit proofSize:', gasLimit.proofSize.toString());
-      console.log('Storage deposit limit:', storageDepositLimit.toString());
-      console.log('Contract code size:', codeSize.toString(), 'bytes');
-
-      // Check if balance is sufficient for deployment
-      const totalRequired = value.add(storageDepositLimit);
-      console.log('Total required:', totalRequired.toString());
-      
-      if (balance.toBn().lt(totalRequired)) {
-        throw new Error(`Insufficient balance. Have: ${balance.toString()}, Need: ${totalRequired.toString()}`);
+      if (!newAccountEvent) {
+        reject(new Error('Contract address not found in events'));
+        return;
       }
 
-      // Create the code parameter using Buffer
-      const code = api.createType('Bytes', [...pvmCodeBuffer]);
+      const contractAddress = newAccountEvent.event.data[0].toString();
+      console.log('Contract deployed at:', contractAddress);
 
-      // Create a fixed 32-byte salt
-      const salt = api.createType('Bytes', Array(32).fill(0));  // 32 zero bytes
+      // Save deployment info
+      const deploymentsDir = path.join(__dirname, '../deployments');
+      if (!fs.existsSync(deploymentsDir)) {
+        fs.mkdirSync(deploymentsDir, { recursive: true });
+      }
 
-      // Empty constructor data since we don't need any arguments
-      const data = api.createType('Bytes', []);
+      fs.writeFileSync(
+        path.join(deploymentsDir, 'polkadot-contracts.json'),
+        JSON.stringify(
+          {
+            priceOracle: contractAddress,
+            network: 'westend-asset-hub',
+            timestamp: new Date().toISOString()
+          },
+          null,
+          2
+        )
+      );
 
-      console.log('Using nonce:', nonce.toString());
-      console.log('Salt length:', salt.length, 'bytes');
-
-      console.log('Submitting instantiate transaction...');
-      api.tx.revive
-        .instantiateWithCode(value, gasLimit, storageDepositLimit, code, data, salt)
-        .signAndSend(account, { nonce }, ({ events = [], status }) => {
-          console.log('Status:', status.type);
-          
-          if (status.isInBlock || status.isFinalized) {
-            events.forEach(({ event }) => {
-              const { section, method, data } = event;
-              console.log(`Event: ${section}.${method}:`, data.toString());
-              
-              if (section === 'system' && method === 'ExtrinsicFailed') {
-                const [dispatchError] = data as unknown as [DispatchError];
-                let errorInfo;
-                
-                if (dispatchError.isModule) {
-                  const decoded = api.registry.findMetaError(dispatchError.asModule);
-                  errorInfo = `${decoded.section}.${decoded.name}: ${decoded.docs}`;
-                } else {
-                  errorInfo = dispatchError.toString();
-                }
-                
-                reject(new Error(`Deployment failed: ${errorInfo}`));
-              }
-            });
-
-            if (status.isFinalized) {
-              const instantiateEvent = events.find(({ event }) => 
-                event.section === 'revive' && event.method === 'Instantiated'
-              );
-
-              if (instantiateEvent) {
-                const [deployer, contractAddress] = instantiateEvent.event.data;
-                console.log('Contract instantiated by:', deployer.toString());
-                console.log('Contract address:', contractAddress.toString());
-                resolve(contractAddress.toString());
-              } else {
-                reject(new Error('Contract instantiation event not found'));
-              }
-            }
-          }
-        })
-        .catch(reject);
-    } catch (error) {
-      reject(error);
+      console.log('Deployment info saved to deployments/polkadot-contracts.json');
+      resolve(contractAddress);
     }
-  });
+
+    if (dispatchError) {
+      if (dispatchError.isModule) {
+        reject(new Error(`Deployment failed: ${dispatchError.asModule.toString()}`));
+      } else {
+        reject(new Error(`Deployment failed: ${dispatchError.toString()}`));
+      }
+    }
+  };
 }
 
 async function main() {
@@ -223,25 +216,6 @@ async function main() {
     console.log('Deploying PriceOracle...');
     const priceOracleAddress = await deployContract(api, deployer, 'PriceOracle');
     console.log('PriceOracle deployed at:', priceOracleAddress);
-
-    // Save deployment info
-    const deploymentsDir = path.join(__dirname, '../deployments');
-    if (!fs.existsSync(deploymentsDir)) {
-      fs.mkdirSync(deploymentsDir, { recursive: true });
-    }
-
-    fs.writeFileSync(
-      path.join(deploymentsDir, 'polkadot-contracts.json'),
-      JSON.stringify(
-        {
-          priceOracle: priceOracleAddress,
-          network: 'westend-asset-hub',
-          timestamp: new Date().toISOString()
-        },
-        null,
-        2
-      )
-    );
 
     console.log('Deployment info saved to deployments/polkadot-contracts.json');
   } catch (error) {

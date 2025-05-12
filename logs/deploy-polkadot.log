@@ -1,42 +1,59 @@
- npx hardhat run scripts/deploy-polkadot.ts --network westendAssetHub
+npx hardhat run scripts/deploy-polkadot.ts --network westendAssetHub
 Deployer address: 5CLjhrXUVwZ6TE5JtinC4Ke6Y5BWb1FNVneaVcKFdphcefSv
 Connecting to Westend Asset Hub...
-2025-05-11 10:59:35        REGISTRY: Unknown signed extensions StorageWeightReclaim found, treating them as no-effect
-2025-05-11 10:59:35        API/INIT: RPC methods not decorated: archive_v1_body, archive_v1_call, archive_v1_finalizedHeight, archive_v1_genesisHash, archive_v1_hashByHeight, archive_v1_header, archive_v1_stopStorage, archive_v1_storage, archive_v1_storageDiff, archive_v1_storageDiff_stopStorageDiff, chainHead_v1_body, chainHead_v1_call, chainHead_v1_continue, chainHead_v1_follow, chainHead_v1_header, chainHead_v1_stopOperation, chainHead_v1_storage, chainHead_v1_unfollow, chainHead_v1_unpin, chainSpec_v1_chainName, chainSpec_v1_genesisHash, chainSpec_v1_properties, transactionWatch_v1_submitAndWatch, transactionWatch_v1_unwatch, transaction_v1_broadcast, transaction_v1_stop
+2025-05-12 10:44:06        REGISTRY: Unknown signed extensions StorageWeightReclaim found, treating them as no-effect
+2025-05-12 10:44:06        API/INIT: RPC methods not decorated: archive_v1_body, archive_v1_call, archive_v1_finalizedHeight, archive_v1_genesisHash, archive_v1_hashByHeight, archive_v1_header, archive_v1_stopStorage, archive_v1_storage, archive_v1_storageDiff, archive_v1_storageDiff_stopStorageDiff, chainHead_v1_body, chainHead_v1_call, chainHead_v1_continue, chainHead_v1_follow, chainHead_v1_header, chainHead_v1_stopOperation, chainHead_v1_storage, chainHead_v1_unfollow, chainHead_v1_unpin, chainSpec_v1_chainName, chainSpec_v1_genesisHash, chainSpec_v1_properties, transactionWatch_v1_submitAndWatch, transactionWatch_v1_unwatch, transaction_v1_broadcast, transaction_v1_stop
 Connected to Westend Asset Hub
 Compiling PriceOracle to PVM...
 Flattening contract...
 Contract flattened successfully
 Compiling with solc...
 Got bytecode from solc, converting to PVM with resolc...
+Compiling to PVM with resolc...
 Successfully compiled to PVM
 Deploying PriceOracle...
-Account balance: 9989146527268
+PVM code size: 1264 bytes
+Account balance: 9536875872628
+Deployment tx nonce: 23
+Available pallets: system, parachainSystem, timestamp, parachainInfo, multiBlockMigrations, balances, collatorSelection, session, xcmpQueue, polkadotXcm, cumulusXcm, toRococoXcmRouter, messageQueue, snowbridgeSystemFrontend, utility, multisig, proxy, assets, uniques, nfts, foreignAssets, nftFractionalization, poolAssets, assetConversion, revive, assetRewards, stateTrieMigration, assetConversionMigration
+Available queries: substrate, system, parachainSystem, timestamp, parachainInfo, multiBlockMigrations, balances, transactionPayment, authorship, collatorSelection, session, aura, auraExt, xcmpQueue, polkadotXcm, toRococoXcmRouter, messageQueue, snowbridgeSystemFrontend, multisig, proxy, assets, uniques, nfts, foreignAssets, nftFractionalization, poolAssets, assetConversion, assetsFreezer, foreignAssetsFreezer, poolAssetsFreezer, revive, assetRewards, stateTrieMigration
+Block weight limits: {
+  maxBlock: { refTime: 2000000000000, proofSize: 10485760 },
+  maxExtrinsic: { refTime: 1399875000000, proofSize: 7340032 }
+}
 Deployment parameters:
-Value (endowment): 50000000
-Gas limit refTime: 500000
-Gas limit proofSize: 100000
-Storage deposit limit: 50000000
-Total required: 100000000
-Using nonce: 1
+Value (endowment): 100000000000
+Gas limit refTime: 699937500000
+Gas limit proofSize: 3670016
+Storage deposit limit: 1364000000000
+Contract code size: 1264 bytes
+Total required: 1464000000000
+Using nonce: 23
+Salt length: 32 bytes
 Submitting instantiate transaction...
 Status: Ready
 Status: Broadcast
 Status: InBlock
-Event: balances.Withdraw: ["5CLjhrXUVwZ6TE5JtinC4Ke6Y5BWb1FNVneaVcKFdphcefSv",13275472732]
-Event: balances.Deposit: ["5CLjhrXUVwZ6TE5JtinC4Ke6Y5BWb1FNVneaVcKFdphcefSv",10000000000]
-Event: balances.Deposit: ["5EYCAe5cKPAoFh2HnQQvpKqRYZGqBpaA87u4Zzw89qPE58is",3275472732]
-Event: transactionPayment.TransactionFeePaid: ["5CLjhrXUVwZ6TE5JtinC4Ke6Y5BWb1FNVneaVcKFdphcefSv",3275472732,0]
-Event: system.ExtrinsicFailed: [{"module":{"index":60,"error":"0x1b000000"}},{"weight":{"refTime":1397743532,"proofSize":2075},"class":"Normal","paysFee":"Yes"}]
-Deployment failed: Error: Deployment failed: revive.CodeRejected: The contract failed to compile or is missing the correct entry points.,,A more detailed error can be found on the node console if debug messages are enabled,by supplying `-lruntime::revive=debug`.
-    at /Users/luke/code/clones/github/ltfschoen/hardhat-polkadot-example/scripts/deploy-polkadot.ts:122:24
-    at Array.forEach (<anonymous>)
-    at /Users/luke/code/clones/github/ltfschoen/hardhat-polkadot-example/scripts/deploy-polkadot.ts:107:20
-    at /Users/luke/code/clones/github/ltfschoen/hardhat-polkadot-example/node_modules/@polkadot/api/cjs/promise/decorateMethod.js:60:40
-    at /Users/luke/code/clones/github/ltfschoen/hardhat-polkadot-example/node_modules/@polkadot/util/cjs/nextTick.js:16:13
-Error: Deployment failed: revive.CodeRejected: The contract failed to compile or is missing the correct entry points.,,A more detailed error can be found on the node console if debug messages are enabled,by supplying `-lruntime::revive=debug`.
-    at /Users/luke/code/clones/github/ltfschoen/hardhat-polkadot-example/scripts/deploy-polkadot.ts:122:24
-    at Array.forEach (<anonymous>)
-    at /Users/luke/code/clones/github/ltfschoen/hardhat-polkadot-example/scripts/deploy-polkadot.ts:107:20
-    at /Users/luke/code/clones/github/ltfschoen/hardhat-polkadot-example/node_modules/@polkadot/api/cjs/promise/decorateMethod.js:60:40
-    at /Users/luke/code/clones/github/ltfschoen/hardhat-polkadot-example/node_modules/@polkadot/util/cjs/nextTick.js:16:13
+Event: balances.Withdraw: ["5CLjhrXUVwZ6TE5JtinC4Ke6Y5BWb1FNVneaVcKFdphcefSv",382797072732]
+Event: system.NewAccount: ["5GwfQFQH6mL3uaiApWVxQuEm6bkjM8s56yn4MLR2Jub1jYSJ"]
+Event: balances.Endowed: ["5GwfQFQH6mL3uaiApWVxQuEm6bkjM8s56yn4MLR2Jub1jYSJ",1000000000]
+Event: balances.Transfer: ["5CLjhrXUVwZ6TE5JtinC4Ke6Y5BWb1FNVneaVcKFdphcefSv","5GwfQFQH6mL3uaiApWVxQuEm6bkjM8s56yn4MLR2Jub1jYSJ",1000000000]
+Event: balances.Transfer: ["5CLjhrXUVwZ6TE5JtinC4Ke6Y5BWb1FNVneaVcKFdphcefSv","5GwfQFQH6mL3uaiApWVxQuEm6bkjM8s56yn4MLR2Jub1jYSJ",100000000000]
+Event: balances.Deposit: ["5CLjhrXUVwZ6TE5JtinC4Ke6Y5BWb1FNVneaVcKFdphcefSv",365975900000]
+Event: balances.Deposit: ["5EYCAe5cKPAoFh2HnQQvpKqRYZGqBpaA87u4Zzw89qPE58is",16821172732]
+Event: transactionPayment.TransactionFeePaid: ["5CLjhrXUVwZ6TE5JtinC4Ke6Y5BWb1FNVneaVcKFdphcefSv",16821172732,0]
+Event: system.ExtrinsicSuccess: [{"weight":{"refTime":1598707526,"proofSize":10723},"class":"Normal","paysFee":"Yes"}]
+Status: Finalized
+Event: balances.Withdraw: ["5CLjhrXUVwZ6TE5JtinC4Ke6Y5BWb1FNVneaVcKFdphcefSv",382797072732]
+Event: system.NewAccount: ["5GwfQFQH6mL3uaiApWVxQuEm6bkjM8s56yn4MLR2Jub1jYSJ"]
+Event: balances.Endowed: ["5GwfQFQH6mL3uaiApWVxQuEm6bkjM8s56yn4MLR2Jub1jYSJ",1000000000]
+Event: balances.Transfer: ["5CLjhrXUVwZ6TE5JtinC4Ke6Y5BWb1FNVneaVcKFdphcefSv","5GwfQFQH6mL3uaiApWVxQuEm6bkjM8s56yn4MLR2Jub1jYSJ",1000000000]
+Event: balances.Transfer: ["5CLjhrXUVwZ6TE5JtinC4Ke6Y5BWb1FNVneaVcKFdphcefSv","5GwfQFQH6mL3uaiApWVxQuEm6bkjM8s56yn4MLR2Jub1jYSJ",100000000000]
+Event: balances.Deposit: ["5CLjhrXUVwZ6TE5JtinC4Ke6Y5BWb1FNVneaVcKFdphcefSv",365975900000]
+Event: balances.Deposit: ["5EYCAe5cKPAoFh2HnQQvpKqRYZGqBpaA87u4Zzw89qPE58is",16821172732]
+Event: transactionPayment.TransactionFeePaid: ["5CLjhrXUVwZ6TE5JtinC4Ke6Y5BWb1FNVneaVcKFdphcefSv",16821172732,0]
+Event: system.ExtrinsicSuccess: [{"weight":{"refTime":1598707526,"proofSize":10723},"class":"Normal","paysFee":"Yes"}]
+Contract deployed at: 5GwfQFQH6mL3uaiApWVxQuEm6bkjM8s56yn4MLR2Jub1jYSJ
+Deployment info saved to deployments/polkadot-contracts.json
+PriceOracle deployed at: 5GwfQFQH6mL3uaiApWVxQuEm6bkjM8s56yn4MLR2Jub1jYSJ
+Deployment info saved to deployments/polkadot-contracts.json
