@@ -13,9 +13,9 @@ task("compile:pvm", "Compiles contracts to PVM using resolc")
   .addParam("contract", "The name of the contract to compile")
   .setAction(async (taskArgs, hre) => {
     // First compile with local solc
-    const solcPath = path.join(process.cwd(), "binaries", "solc");
+    const solcPath = path.join(process.cwd(), "bin", "solc");
     const contractPath = path.join(process.cwd(), "contracts", `${taskArgs.contract}.sol`);
-    const resolcPath = path.join(process.cwd(), "binaries", "resolc");
+    const resolcPath = path.join(process.cwd(), "bin", "resolc");
     const pvmDir = path.join(process.cwd(), "artifacts-pvm");
     const flattenedPath = path.join(process.cwd(), "artifacts-pvm", `${taskArgs.contract}.flattened.sol`);
 

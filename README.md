@@ -38,11 +38,11 @@ npm install
    - For macOS: Download `resolc-universal-apple-darwin`
    - For Linux: Download `resolc-x86_64-unknown-linux-musl`
    - For Windows: Download `resolc-x86_64-pc-windows-msvc.exe`
-   - Place the binary in the `binaries` folder and rename it to `resolc`
-   - For macOS users: Run `xattr -c binaries/resolc && chmod +x binaries/resolc`
+   - Place the binary in the `bin` folder and rename it to `resolc`
+   - For macOS users: Run `xattr -c bin/resolc && chmod +x bin/resolc`
 
 ```bash
-curl -L https://github.com/paritytech/revive/releases/download/v0.1.0-dev.16/resolc-universal-apple-darwin -o binaries/resolc && xattr -c binaries/resolc && chmod +x binaries/resolc
+curl -L https://github.com/paritytech/revive/releases/download/v0.1.0-dev.16/resolc-universal-apple-darwin -o bin/resolc && xattr -c bin/resolc && chmod +x bin/resolc
 ```
 
 3. Solc binary
@@ -64,7 +64,7 @@ WESTEND_HUB_PK=your_westend_private_key  # Private key in hex format (with or wi
 WESTEND_WRAPPED_TOKEN_ADDRESS=            # Will be set after deploying WrappedToken
 ```
 
-5. PolkaVM binaries should be in the `binaries` directory from the documentation
+5. PolkaVM binaries should be in the `bin` directory from the documentation
 
 6. Deploy Contracts:
 

@@ -1,16 +1,16 @@
 #!/bin/bash
 
-# Make binaries directory if it doesn't exist
-mkdir -p binaries
+# Make bin directory if it doesn't exist
+mkdir -p bin
 
 # Make solc executable
-chmod +x binaries/solc
+chmod +x bin/solc
 
 # Make resolc executable
-chmod +x binaries/resolc
+chmod +x bin/resolc
 
-# Add binaries to PATH
-export PATH="$PATH:$(pwd)/binaries"
+# Add bin to PATH
+export PATH="$PATH:$(pwd)/bin"
 
 # Verify solc is accessible
 if ! command -v solc &> /dev/null; then
