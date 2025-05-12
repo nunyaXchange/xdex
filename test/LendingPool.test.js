@@ -14,13 +14,11 @@ describe("LendingPool", function () {
     // Deploy mock ERC20 token
     const Token = await ethers.getContractFactory("MockERC20");
     token = await Token.deploy("Mock Token", "MTK");
-    await token.deployed();
-
+    
     // Deploy LendingPool
     LendingPool = await ethers.getContractFactory("LendingPool");
     [owner, lender, borrower, polkaVMBridge] = await ethers.getSigners();
     lendingPool = await LendingPool.deploy();
-    await lendingPool.deployed();
 
     // Set PolkaVM bridge address
     await lendingPool.setPolkaVMBridge(polkaVMBridge.address);
@@ -111,7 +109,7 @@ describe("LendingPool", function () {
       const lenderPosition = await lendingPool.lenderPositions(lender.address);
       const borrowerPosition = await lendingPool.borrowerPositions(borrower.address);
 
-      expect(lenderPosition.amount).to.equal(lendAmount.sub(borrowAmount));
+      expect(lenderPosition.amount).to.equal(lendAmount - borrowAmount);
       expect(borrowerPosition.borrowedAmount).to.equal(borrowAmount);
     });
 
@@ -133,7 +131,7 @@ describe("LendingPool", function () {
         .withArgs(borrower.address, lender.address, liquidationAmount);
 
       const borrowerPosition = await lendingPool.borrowerPositions(borrower.address);
-      expect(borrowerPosition.collateralAmount).to.equal(collateralAmount.sub(liquidationAmount));
+      expect(borrowerPosition.collateralAmount).to.equal(collateralAmount - liquidationAmount);
     });
   });
 });

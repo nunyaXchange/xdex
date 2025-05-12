@@ -1,6 +1,5 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { time } = require("@nomicfoundation/hardhat-network-helpers");
 
 describe("PriceOracle", function () {
   let PriceOracle;
@@ -14,13 +13,14 @@ describe("PriceOracle", function () {
     PriceOracle = await ethers.getContractFactory("PriceOracle");
     [owner, user, asset1, asset2] = await ethers.getSigners();
     priceOracle = await PriceOracle.deploy();
-    await priceOracle.deployed();
   });
 
   describe("Price Updates", function () {
     it("Should allow owner to update asset price", async function () {
-      const price = ethers.utils.parseEther("100"); // $100
-      await priceOracle.updateAssetPrice(asset1.address, price);
+      const price = ethers.parseEther("100"); // $100
+      await expect(priceOracle.updateAssetPrice(asset1.address, price))
+        .to.emit(priceOracle, "PriceUpdated")
+        .withArgs(asset1.address, price);
 
       const assetPrice = await priceOracle.assetPrices(asset1.address);
       expect(assetPrice.price).to.equal(price);
@@ -28,14 +28,14 @@ describe("PriceOracle", function () {
     });
 
     it("Should not allow non-owner to update price", async function () {
-      const price = ethers.utils.parseEther("100");
+      const price = ethers.parseEther("100");
       await expect(
         priceOracle.connect(user).updateAssetPrice(asset1.address, price)
       ).to.be.revertedWith("Ownable: caller is not the owner");
     });
 
     it("Should not allow price update before minimum interval", async function () {
-      const price = ethers.utils.parseEther("100");
+      const price = ethers.parseEther("100");
       await priceOracle.updateAssetPrice(asset1.address, price);
 
       await expect(
@@ -44,11 +44,12 @@ describe("PriceOracle", function () {
     });
 
     it("Should allow price update after minimum interval", async function () {
-      const price1 = ethers.utils.parseEther("100");
-      const price2 = ethers.utils.parseEther("120");
+      const price1 = ethers.parseEther("100");
+      const price2 = ethers.parseEther("120");
 
       await priceOracle.updateAssetPrice(asset1.address, price1);
-      await time.increase(3600); // Increase time by 1 hour
+      await ethers.provider.send("evm_increaseTime", [3600]); // Increase time by 1 hour
+      await ethers.provider.send("evm_mine");
 
       await priceOracle.updateAssetPrice(asset1.address, price2);
       const assetPrice = await priceOracle.assetPrices(asset1.address);
@@ -59,13 +60,13 @@ describe("PriceOracle", function () {
   describe("Collateral Ratio Calculation", function () {
     beforeEach(async function () {
       // Set up initial prices
-      await priceOracle.updateAssetPrice(asset1.address, ethers.utils.parseEther("100")); // Collateral
-      await priceOracle.updateAssetPrice(asset2.address, ethers.utils.parseEther("1")); // Borrowed
+      await priceOracle.updateAssetPrice(asset1.address, ethers.parseEther("100")); // Collateral
+      await priceOracle.updateAssetPrice(asset2.address, ethers.parseEther("1")); // Borrowed
     });
 
     it("Should calculate correct collateral ratio", async function () {
-      const collateralAmount = ethers.utils.parseEther("1"); // 1 unit of asset1 ($100)
-      const borrowedAmount = ethers.utils.parseEther("50"); // 50 units of asset2 ($50)
+      const collateralAmount = ethers.parseEther("1"); // 1 unit of asset1 ($100)
+      const borrowedAmount = ethers.parseEther("50"); // 50 units of asset2 ($50)
 
       const ratio = await priceOracle.calculateCollateralRatio(
         user.address,
@@ -84,7 +85,7 @@ describe("PriceOracle", function () {
           user.address,
           asset1.address,
           asset2.address,
-          ethers.utils.parseEther("1"),
+          ethers.parseEther("1"),
           0
         )
       ).to.be.revertedWith("Borrowed amount must be greater than 0");
@@ -98,8 +99,8 @@ describe("PriceOracle", function () {
           user.address,
           newAsset,
           asset2.address,
-          ethers.utils.parseEther("1"),
-          ethers.utils.parseEther("1")
+          ethers.parseEther("1"),
+          ethers.parseEther("1")
         )
       ).to.be.revertedWith("Prices not active");
     });
@@ -107,7 +108,7 @@ describe("PriceOracle", function () {
 
   describe("Price Queries", function () {
     it("Should return latest price for active asset", async function () {
-      const price = ethers.utils.parseEther("100");
+      const price = ethers.parseEther("100");
       await priceOracle.updateAssetPrice(asset1.address, price);
 
       const latestPrice = await priceOracle.getLatestPrice(asset1.address);
@@ -121,12 +122,13 @@ describe("PriceOracle", function () {
     });
 
     it("Should correctly report price activity status", async function () {
-      const price = ethers.utils.parseEther("100");
+      const price = ethers.parseEther("100");
       await priceOracle.updateAssetPrice(asset1.address, price);
 
       expect(await priceOracle.isPriceActive(asset1.address)).to.equal(true);
 
-      await time.increase(3601); // Increase time by more than 1 hour
+      await ethers.provider.send("evm_increaseTime", [3601]); // Increase time by more than 1 hour
+      await ethers.provider.send("evm_mine");
       expect(await priceOracle.isPriceActive(asset1.address)).to.equal(false);
     });
   });

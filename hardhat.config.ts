@@ -137,7 +137,11 @@ const config: HardhatUserConfig = {
     artifacts: "./artifacts"
   },
   networks: {
-    hardhat: {},
+    hardhat: {
+      accounts: {
+        accountsBalance: "100000000000000000000000" // 100,000 ETH
+      }
+    },
     westendAssetHub: {
       url: "https://westend-asset-hub-eth-rpc.polkadot.io",
       accounts: process.env.WESTEND_HUB_PK ? [process.env.WESTEND_HUB_PK] : [],
