@@ -207,6 +207,28 @@ npm run deploy:price-oracle   # Deploys PriceOracle (PVM)
 npm run deploy:westend
 ```
 
+### Deployment Architecture
+
+This project uses a unified deployment approach for both networks:
+
+1. **Compilation**:
+   - Ethereum (Sepolia): Standard Solidity compilation to EVM bytecode via Hardhat
+   - Westend Asset Hub: Two-step process:
+     1. Flatten Solidity contracts (combine imports)
+     2. Compile to PVM bytecode using resolc
+
+2. **Deployment**:
+   Both networks use ethers.js for deployment, which means:
+   - No need for Polkadot.js API or Substrate calls
+   - Same deployment code works for both networks
+   - Standard Ethereum-style transactions
+   - Familiar tooling and debugging
+
+3. **Contract Interaction**:
+   - Both networks support standard Web3 interfaces
+   - Use the same ABI format
+   - Compatible with Ethereum tools and libraries
+
 ### Network Comparison
 
 Ethereum (Sepolia):
@@ -218,6 +240,8 @@ Westend Asset Hub:
 - Uses PVM (PolkaVM) bytecode
 - Lower fees and faster finality
 - Contracts: WrappedToken, PriceOracle (PVM)
+- Fully EVM-compatible despite using PVM
+- No need for Substrate-specific calls
 
 ### Contract Verification
 
