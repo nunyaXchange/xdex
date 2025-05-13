@@ -31,13 +31,6 @@ async function main() {
   // Get the ABI from the original contract artifact
   const artifact = require('../artifacts/contracts/WrappedToken.sol/WrappedToken.json');
   
-  // Create factory with PVM bytecode
-  const factory = new ethers.ContractFactory(
-    artifact.abi,
-    pvmBytecode,  // Use raw PVM bytecode
-    deployer
-  );
-  
   // Get account details
   const deployerAddress = await deployer.getAddress();
   console.log("Deployer address:", deployerAddress);
@@ -49,7 +42,13 @@ async function main() {
   let balance;
   try {
     const result = await deployer.provider.send('eth_getBalance', [deployerAddress, 'latest']);
-    balance = BigInt(result);
+
+    // Handle hex string properly
+    if (typeof result === 'string' && result.startsWith('0x')) {
+      balance = BigInt(result);
+    } else {
+      throw new Error('Unexpected balance format');
+    }
   } catch (e) {
     console.error('Failed to get balance:', e);
     balance = await deployer.provider.getBalance(deployerAddress);
@@ -66,7 +65,7 @@ async function main() {
   // First check if we can estimate gas
   const gasEstimate = await deployer.provider.estimateGas({
     from: deployerAddress,
-    data: factory.bytecode
+    data: pvmBytecode
   }).catch(e => {
     console.log('Gas estimation failed, using default:', e.message);
     return BigInt(5000000);
@@ -74,7 +73,7 @@ async function main() {
 
   const tx = {
     nonce: nonce,
-    data: factory.bytecode,
+    data: pvmBytecode,
     gasPrice: gasPrice,
     gasLimit: gasLimit,
     value: 0,
@@ -90,12 +89,12 @@ async function main() {
   const maxTimeout = 180000; // 180 seconds timeout from config
   let attempt = 0;
 
+  // Initial delay before first attempt
+  console.log('Waiting 10 seconds before first attempt...');
+  await new Promise(resolve => setTimeout(resolve, 10000));
+
   while (attempt < maxRetries) {
     try {
-      // Add longer delay before transaction
-      console.log(`Waiting 5 seconds before attempt ${attempt + 1}/${maxRetries}...`);
-      await new Promise(resolve => setTimeout(resolve, 5000));
-
       console.log("Deploying with transaction:", {
         ...tx,
         data: tx.data.substring(0, 100) + '...' // Truncate data for logging
@@ -155,8 +154,11 @@ async function main() {
         throw new Error(`Failed to deploy after ${maxRetries} attempts: ${errorMessage}`);
       }
       
-      // Increment nonce and add delay before retry
-      await new Promise(resolve => setTimeout(resolve, 10000)); // 10 second delay
+      // Add delay before retry
+      console.log(`Waiting 10 seconds before next attempt ${attempt + 1}/${maxRetries}...`);
+      await new Promise(resolve => setTimeout(resolve, 10000));
+      
+      // Update nonce
       tx.nonce = await deployer.provider.getTransactionCount(deployerAddress, 'latest');
       console.log('Updated nonce to:', tx.nonce);
       console.log(`Increasing gas price to ${ethers.formatUnits(tx.gasPrice, 'gwei')} gwei`);
