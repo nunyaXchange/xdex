@@ -93,12 +93,13 @@ async function deployContract(
   }
 
   // Prepare contract deployment parameters
-  // Properly encode the contract code
-  const code = api.createType('Bytes', pvmCodeBuffer);
+  // Properly encode the contract code with hex prefix
+  const codeHex = '0x' + pvmCodeBuffer.toString('hex');
+  const code = api.createType('Bytes', codeHex);
   
-  // Create a fixed 32-byte salt
+  // Create a fixed 32-byte salt without hex prefix
   const saltBytes = ensure32Bytes(randomBytes(32));
-  const salt = u8aToHex(saltBytes);
+  const salt = u8aToHex(saltBytes).substring(2);  // Remove '0x' prefix
   
   // Empty constructor arguments
   const encodedArgs = api.createType('Bytes', '0x');
