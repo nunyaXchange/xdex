@@ -20,6 +20,17 @@ A lending system implemented using Solidity smart contracts for Ethereum and Pol
    - Oracle-based price feeds
    - Automated liquidation process
 
+## Important Notes
+
+### Price Oracle Implementation
+The current price oracle implementation is centralized - prices are set by the contract owner rather than being fetched from an external source like Chainlink. In a production environment, you would want to:
+
+1. Use a decentralized oracle network
+2. Add multiple price sources
+3. Implement price aggregation logic
+4. Add more safety checks on price validity
+
+## Setup
 
 Install Node.js (i.e. v22.14.0)
 
@@ -103,7 +114,6 @@ npx hardhat run scripts/deploy-polkadot.ts --network westendAssetHub
 
 # To deploy to Ethereum (optional)
 npx hardhat run scripts/deploy-ethereum.ts --network sepolia
-```
 
 
 ## Network Configuration
