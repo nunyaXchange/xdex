@@ -169,6 +169,18 @@ npm run deploy:westend
 # - PriceOracle (PVM version): Price feed integration for Westend operations
 #   Compiled with compile:pvm, deployed as PVM bytecode
 #   Address saved to deployments/price-oracle.json
+
+# 3. Verify contracts on block explorers
+
+## Ethereum (Sepolia)
+Contracts will be automatically verified on Etherscan if ETHERSCAN_API_KEY is set in .env
+Verify deployment at:
+- https://sepolia.etherscan.io/address/YOUR_CONTRACT_ADDRESS
+
+## Westend
+Contracts deployed to Westend can be verified on:
+- https://westend.subscan.io/
+- https://polkadot.js.org/apps/?rpc=wss%3A%2F%2Fwestend-rpc.polkadot.io#/explorer
 ```
 
 ## Network Configuration
@@ -193,7 +205,6 @@ The same private key is used to deploy to both networks, but it's represented wi
 You can get test WND tokens from the [Westend Faucet](https://faucet.westend.network) or https://paritytech.github.io/polkadot-testnet-faucet/
 
 ## Contract Architecture
-
 
 1. `LendingPool.sol` (Ethereum)
    - Manages deposits and collateral

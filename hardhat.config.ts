@@ -31,10 +31,19 @@ task("compile:pvm", "Compiles contracts to PVM using resolc")
       // Compile with resolc directly
       console.log("Compiling with resolc...");
       
-      // Run resolc with proper import paths and local solc
+      // First flatten using hardhat's flattener
+      const flattenedSource = await hre.run("flatten:get-flattened-sources", {
+        files: [contractPath]
+      });
+
+      // Save flattened source
+      const flattenedPath = path.join(pvmDir, `${taskArgs.contract}.flattened.sol`);
+      fs.writeFileSync(flattenedPath, flattenedSource);
+
+      // Then compile with resolc
       const solcPath = path.join(process.cwd(), "bin", "solc");
       const resolcResult = spawnSync(resolcPath, [
-        contractPath,
+        contractPath,  // Use original contract path since resolc can handle imports
         '--base-path', process.cwd(),
         '--include-path', 'node_modules',
         '--include-path', 'node_modules/@openzeppelin',
@@ -47,6 +56,17 @@ task("compile:pvm", "Compiles contracts to PVM using resolc")
         stdio: 'inherit',
         encoding: 'utf-8'
       });
+
+      // The output will be named {ContractName}.sol:{ContractName}.pvm by resolc
+      const outputPath = path.join(pvmDir, `${taskArgs.contract}.sol:${taskArgs.contract}.pvm`);
+      const targetPath = path.join(pvmDir, `${taskArgs.contract}.flattened.sol:${taskArgs.contract}.pvm`);
+      
+      if (fs.existsSync(outputPath)) {
+        fs.renameSync(outputPath, targetPath);
+      } else {
+        console.error('Expected PVM file not found:', outputPath);
+        throw new Error('PVM compilation failed');
+      }
 
       if (resolcResult.error) {
         throw resolcResult.error;
@@ -89,7 +109,12 @@ const config: HardhatUserConfig = {
     westendAssetHub: {
       url: "https://westend-asset-hub-eth-rpc.polkadot.io",
       accounts: process.env.WESTEND_HUB_PK ? [process.env.WESTEND_HUB_PK] : [],
-      chainId: 420420421
+      chainId: 420420421,
+      gasPrice: 100000000000,  // 100 gwei
+      timeout: 180000,         // 180 seconds
+      gas: 5000000,           // Higher fixed gas limit
+      allowUnlimitedContractSize: true,
+      blockGasLimit: 15000000  // Higher block gas limit
     },
     sepolia: {
       url: process.env.SEPOLIA_URL,

@@ -1,4 +1,4 @@
-import { ethers } from "hardhat";
+import { ethers, run } from "hardhat";
 
 async function main() {
   const [deployer] = await ethers.getSigners();
@@ -16,9 +16,9 @@ async function main() {
   await mockToken.waitForDeployment();
   console.log("MockERC20 deployed to:", await mockToken.getAddress());
 
-  // Deploy LendingPool
+  // Deploy LendingPool with MockERC20 as the token
   const LendingPool = await ethers.getContractFactory("LendingPool");
-  const lendingPool = await LendingPool.deploy();
+  const lendingPool = await LendingPool.deploy(await mockToken.getAddress());
   await lendingPool.waitForDeployment();
   console.log("LendingPool deployed to:", await lendingPool.getAddress());
 
@@ -41,22 +41,22 @@ async function main() {
   if (process.env.ETHERSCAN_API_KEY) {
     console.log("Verifying contracts on Etherscan...");
     try {
-      await hre.run("verify:verify", {
+      await run("verify:verify", {
         address: await priceOracle.getAddress(),
         constructorArguments: [],
       });
 
-      await hre.run("verify:verify", {
+      await run("verify:verify", {
         address: await mockToken.getAddress(),
         constructorArguments: ["Mock Token", "MTK"],
       });
 
-      await hre.run("verify:verify", {
+      await run("verify:verify", {
         address: await lendingPool.getAddress(),
-        constructorArguments: [],
+        constructorArguments: [await mockToken.getAddress()],
       });
 
-      await hre.run("verify:verify", {
+      await run("verify:verify", {
         address: await lendingPoolBridge.getAddress(),
         constructorArguments: [
           await priceOracle.getAddress(),
