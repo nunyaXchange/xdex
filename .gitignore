@@ -18,3 +18,12 @@ node_modules
 ignition/deployments/chain-31337
 .qodo/
 .DS_Store
+
+# Yarn Berry (Yarn 2+) files
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions

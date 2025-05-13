@@ -64,15 +64,39 @@ task("compile:pvm", "Compiles contracts to PVM using resolc")
 
       // Now compile with resolc
       console.log("Compiling with resolc...");
-      const resolcResult = spawnSync(resolcPath, [
-        flattenedPath,
-        "--bin",
-        "--abi",
-        "--optimize",
-        "--overwrite",
-        "--metadata",
-        "--metadata-literal"
-      ]);
+      const binPath = path.join(process.cwd(), "bin");
+      const env = {
+        ...process.env,
+        PATH: `${binPath}:${process.env.PATH}`
+      };
+
+      // Create standard JSON input for resolc
+      const resolcInput = {
+        language: "Solidity",
+        sources: {
+          [flattenedPath]: {
+            content: fs.readFileSync(flattenedPath, 'utf8')
+          }
+        },
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200
+          },
+          outputSelection: {
+            "*": {
+              "*": ["evm.bytecode", "abi"]
+            }
+          }
+        }
+      };
+
+      // Run resolc with JSON input through stdin
+      const resolcResult = spawnSync(resolcPath, ["--standard-json"], { 
+        input: JSON.stringify(resolcInput),
+        env,
+        encoding: 'utf-8'
+      });
 
       if (resolcResult.error) {
         throw resolcResult.error;

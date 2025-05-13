@@ -80,8 +80,8 @@ WESTEND_WRAPPED_TOKEN_ADDRESS=            # Will be set after deploying WrappedT
 6. Deploy Contracts:
 
 ```bash
-# Clear cache
-rm -rf cache-pvm artifacts-pvm
+# Clear all caches (optional - do this to force a fresh compilation)
+rm -rf cache cache-pvm artifacts artifacts-pvm
 ```
 
 ```bash
@@ -91,11 +91,14 @@ chmod +x scripts/setup-compilers.sh && ./scripts/setup-compilers.sh
 
 ```bash
 # Compile contracts for Ethereum deployment (EVM bytecode)
+# If you see "Nothing to compile", it means the contracts haven't changed
+# Use the clear cache command above to force recompilation
 npm run compile:evm
 
 # Compile contracts for Westend Asset Hub deployment (PVM bytecode)
-npx hardhat compile:pvm --contract PriceOracle  # For PriceOracle
-npx hardhat compile:pvm --contract WrappedToken # For WrappedToken
+# This uses resolc to convert Solidity to PVM bytecode
+npx hardhat compile:pvm --contract PriceOracle  # Compile PriceOracle to PVM
+npx hardhat compile:pvm --contract WrappedToken # Compile WrappedToken to PVM
 
 # Generate TypeScript typings for contracts (after compilation)
 npx hardhat typechain
@@ -122,7 +125,7 @@ npm run deploy:westend
 # - PriceOracle (PVM version): Price feed integration for Westend operations
 #   Compiled with compile:pvm, deployed as PVM bytecode
 #   Address saved to deployments/polkadot-contracts.json
-
+```
 
 ## Network Configuration
 
