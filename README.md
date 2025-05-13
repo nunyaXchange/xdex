@@ -95,18 +95,19 @@ curl -L https://github.com/paritytech/revive/releases/download/v0.1.0-dev.16/res
 3. Configure Environment:
 Run `cp .env.example .env` and then modify the `.env` file with the following variables:
 ```
-# Ethereum Configuration
-PRIVATE_KEY=your_ethereum_private_key
-SEPOLIA_URL=your_sepolia_rpc_url
-ETHERSCAN_API_KEY=your_etherscan_api_key  # Optional, for contract verification
+# Ethereum Network Configuration
+SEPOLIA_URL=https://sepolia.infura.io/v3/PROJECT-ID
+ETHERSCAN_API_KEY="etherscan-api-key"
 
-# Westend Asset Hub Configuration
+# Cross-Chain Private Keys
+# Using the same key allows consistent ownership across chains
+PRIVATE_KEY=your-private-key
 WESTEND_HUB_PK=your_westend_private_key  # Private key in hex format (with or without 0x prefix)
 ```
 
-5. PolkaVM binaries should be in the `bin` directory from the documentation
+4. PolkaVM binaries should be in the `bin` directory from the documentation
 
-6. Deploy Contracts:
+5. Deploy Contracts:
 
 ```bash
 # Clear all caches (optional - do this to force a fresh compilation)
