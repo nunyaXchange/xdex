@@ -36,12 +36,70 @@ task("compile:pvm", "Compiles contracts to PVM using resolc")
         files: [contractPath]
       });
 
+      if (!flattenedSource) {
+        throw new Error("Failed to flatten contract");
+      }
+
       // Save flattened source
       const flattenedPath = path.join(pvmDir, `${taskArgs.contract}.flattened.sol`);
       fs.writeFileSync(flattenedPath, flattenedSource);
+      console.log("Contract flattened successfully");
+
+      // Compile flattened contract with solc
+      console.log("Compiling with solc...");
+      const solcPath = path.join(process.cwd(), "bin", "solc");
+      const solcResult = spawnSync(solcPath, [
+        flattenedPath,
+        "--bin",
+        "--abi",
+        "--optimize",
+        "--overwrite",
+        "--metadata",
+        "--metadata-literal"
+      ], {
+        encoding: 'utf8',
+        cwd: process.cwd()
+      });
+
+      if (solcResult.status !== 0) {
+        throw new Error(`solc failed: ${solcResult.stderr}`);
+      }
+
+      // Extract the binary output
+      const bytecode = solcResult.stdout.split('\n')
+        .find(line => line.startsWith('60'))
+        ?.trim();
+
+      if (!bytecode) {
+        throw new Error('No bytecode found in solc output');
+      }
+
+      // Extract the ABI
+      const abiMatch = solcResult.stdout.match(/Contract JSON ABI\n(.*)/);
+      if (!abiMatch) {
+        throw new Error('No ABI found in solc output');
+      }
+
+      // Create metadata JSON
+      const metadata = {
+        V3: {
+          spec: {
+            constructors: [{
+              args: JSON.parse(abiMatch[1])
+            }]
+          }
+        }
+      };
+
+      // Write metadata file
+      fs.writeFileSync(
+        path.join(pvmDir, `${taskArgs.contract}.flattened.sol:${taskArgs.contract}.json`),
+        JSON.stringify(metadata, null, 2)
+      );
+
+      console.log("Got bytecode from solc, converting to PVM with resolc...");
 
       // Then compile with resolc
-      const solcPath = path.join(process.cwd(), "bin", "solc");
       const resolcResult = spawnSync(resolcPath, [
         contractPath,  // Use original contract path since resolc can handle imports
         '--base-path', process.cwd(),
@@ -49,7 +107,11 @@ task("compile:pvm", "Compiles contracts to PVM using resolc")
         '--include-path', 'node_modules/@openzeppelin',
         '--solc', solcPath,
         '-O1',  // Lower optimization level for better compatibility
+        // "If the contract uses more stack memory than configured, it will compile fine but eventually revert execution at runtime!"
+        // Reference: https://contracts.polkadot.io/revive_compiler/usage
         '--stack-size', '65536',  // Double the default stack size
+        // "If the contract uses more heap memory than configured, it will compile fine but eventually revert execution at runtime!"
+        // Reference: https://contracts.polkadot.io/revive_compiler/usage
         '--heap-size', '131072',  // Double the default heap size
         '--bin', // Output bytecode
         '--output-dir', pvmDir,
