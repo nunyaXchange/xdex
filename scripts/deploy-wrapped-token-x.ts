@@ -66,23 +66,23 @@ async function deployContract(
     maxExtrinsic
   });
 
-  // Create deployment parameters with higher limits
-  const value = new BN('10000000000000').toString();  // 10 WND for endowment
+  // Create deployment parameters with higher limits based on actual usage
+  const value = new BN('1000000000000').toString();  // 1 WND for endowment (ED will be added automatically)
   
-  // Increase gas limits while staying within block limits
+  // Set gas limits based on actual usage from previous attempt
   const gasLimit = {
-    refTime: new BN('1000000000').toString(),    // 1B units
-    proofSize: new BN('1000000').toString()      // 1M units
+    refTime: new BN('3000000000').toString(),    // 3B units (previous attempt used 2.16B)
+    proofSize: new BN('10000').toString()        // 10K units (previous attempt used 5K)
   };
 
   // Set explicit storage deposit limit
-  const storageDepositLimit = new BN('100000000000000').toString();  // 100 WND for storage deposit
+  const storageDepositLimit = new BN('1000000000000').toString();  // 1 WND for storage deposit
 
   console.log('Deployment parameters:');
   console.log('Value (endowment):', value);
   console.log('Gas limit refTime:', gasLimit.refTime);
   console.log('Gas limit proofSize:', gasLimit.proofSize);
-  console.log('Storage deposit limit: null (chain calculated)');
+  console.log('Storage deposit limit:', storageDepositLimit);
   console.log('Contract code size:', pvmCodeBuffer.length, 'bytes');
   
   const totalRequired = new BN(value);
@@ -93,13 +93,15 @@ async function deployContract(
   }
 
   // Prepare contract deployment parameters
-  // Properly encode the contract code with hex prefix
+  // Properly encode the contract code and constructor data
   const codeHex = '0x' + pvmCodeBuffer.toString('hex');
   const code = api.createType('Bytes', codeHex);
+  const constructorData = api.createType('Bytes', hexToU8a('0x'));  // Empty constructor data for now
   
-  // Create a fixed 32-byte salt without hex prefix
-  const saltBytes = ensure32Bytes(randomBytes(32));
-  const salt = u8aToHex(saltBytes).substring(2);  // Remove '0x' prefix
+  // Use deterministic salt for testing
+  const salt = api.createType('Bytes', new Uint8Array(32));
+  console.log('Salt byte length:', salt.length);
+  console.log('Salt bytes:', [...salt.toU8a()]);
   
   // Empty constructor arguments
   const encodedArgs = api.createType('Bytes', '0x');
@@ -117,8 +119,8 @@ async function deployContract(
   
   // Log parameters for debugging
   console.log('Code length:', pvmCodeBuffer.length);
-  console.log('Salt:', u8aToHex(saltBytes));
-  console.log('Encoded args:', u8aToHex(encodedArgs));
+  console.log('Salt:', u8aToHex(salt));
+  console.log('Encoded args:', encodedArgs.toHex());
 
   console.log('Using nonce:', nonce.toString());
   console.log('Salt length:', salt.length, 'bytes');
@@ -131,14 +133,14 @@ async function deployContract(
       return;
     }
 
-    // Create transaction with null storage deposit limit
+    // Create transaction with explicit storage deposit limit
     const tx = api.tx.revive.instantiateWithCode(
       value,
       gasLimit,
-      null,  // Let chain calculate storage deposit
+      storageDepositLimit,  // Explicit storage deposit limit
       code,
-      encodedArgs,
-      salt
+      salt,  // Salt comes before constructor args in the new API
+      encodedArgs
     );
 
     // Log parameters for debugging
