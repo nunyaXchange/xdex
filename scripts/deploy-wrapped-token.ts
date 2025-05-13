@@ -9,7 +9,7 @@ async function main() {
   // First compile to PVM
   await new Promise((resolve, reject) => {
     try {
-      execSync("npx hardhat compile:wasm", { stdio: 'inherit' });
+      execSync("npx hardhat compile:pvm --contract WrappedToken", { stdio: 'inherit' });
       resolve(undefined);
     } catch (error) {
       reject(error);

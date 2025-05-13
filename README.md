@@ -90,30 +90,33 @@ chmod +x scripts/setup-compilers.sh && ./scripts/setup-compilers.sh
 ```
 
 ```bash
-# Compile contracts
-npx hardhat compile
+# Compile contracts for Ethereum deployment (EVM bytecode)
+npm run compile:evm
 
-# Compile contracts to PVM for Westend Asset Hub
-npx hardhat compile:pvm --contract PriceOracle
+# Compile contracts for Westend Asset Hub deployment (PVM bytecode)
+npx hardhat compile:pvm --contract PriceOracle  # For PriceOracle
+npx hardhat compile:pvm --contract WrappedToken # For WrappedToken
 
 # Generate TypeScript typings for contracts (after compilation)
 npx hardhat typechain
 
-# First, deploy the wrapped token to Westend Asset Hub
-npx hardhat run scripts/deploy-wrapped-token.ts --network westendAssetHub
+# 1. Deploy core contracts to Ethereum (required)
+npm run deploy:eth
 
-# The script will:
-# - Deploy the contract using PolkaVM
-# - Save the contract address to deployments/wrapped-token.json
+# This will deploy:
+# - LendingPool: Main lending functionality
+# - LendingPoolBridge: Cross-chain bridge logic
+# - PriceOracle: Price feed management
+# - MockERC20: Test token
 
-# Add the deployed address to your .env file:
-WESTEND_WRAPPED_TOKEN_ADDRESS=<address_from_wrapped_token_json>
+# 2. Deploy supporting contracts to Westend Asset Hub
+npm run deploy:westend
 
-# Then deploy the lending contracts to Westend Asset Hub
-npx hardhat run scripts/deploy-polkadot.ts --network westendAssetHub
-
-# To deploy to Ethereum (optional)
-npx hardhat run scripts/deploy-ethereum.ts --network sepolia
+# This will deploy:
+# - WrappedToken (deploy:wrapped-token): For cross-chain asset representation
+#   Address saved to deployments/wrapped-token.json
+# - PriceOracle (deploy:price-oracle): For price feed integration
+#   Address saved to deployments/polkadot-contracts.json
 
 
 ## Network Configuration
