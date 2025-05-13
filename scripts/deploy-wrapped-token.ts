@@ -25,8 +25,17 @@ async function main() {
   const pvmBytecodeRaw = fsSync.readFileSync(pvmPath);
   const pvmBytecode = '0x' + pvmBytecodeRaw.toString('hex');
 
-  // Get the contract factory with PVM bytecode and ABI
-  const [deployer] = await ethers.getSigners();
+  // Setup custom provider with the right configuration
+  const westendProvider = new ethers.JsonRpcProvider(
+    "https://westend-asset-hub-eth-rpc.polkadot.io",
+    {
+      chainId: 420420421,
+      name: "westendAssetHub"
+    }
+  );
+  
+  // Create signer with the custom provider
+  const deployer = new ethers.Wallet(process.env.WESTEND_HUB_PK || '', westendProvider);
   
   // Get the ABI from the original contract artifact
   const artifact = require('../artifacts/contracts/WrappedToken.sol/WrappedToken.json');
@@ -35,35 +44,39 @@ async function main() {
   const deployerAddress = await deployer.getAddress();
   console.log("Deployer address:", deployerAddress);
   
-  const network = await deployer.provider.getNetwork();
+  const network = await westendProvider.getNetwork();
   const symbol = network.chainId === 420420421n ? "WND" : "ETH";
   
-  // Get balance for Westend Asset Hub using raw RPC call
-  let balance;
-  try {
-    const result = await deployer.provider.send('eth_getBalance', [deployerAddress, 'latest']);
+  // Get balance using both methods for debugging
+  console.log('Getting balance for address:', deployerAddress);
+  
+  // Method 1: Direct RPC call
+  const rpcResult = await westendProvider.send('eth_getBalance', [deployerAddress, 'latest']);
+  console.log('RPC balance result:', rpcResult);
+  const rpcBalance = BigInt(rpcResult);
+  console.log('RPC balance in WND:', ethers.formatEther(rpcBalance));
 
-    // Handle hex string properly
-    if (typeof result === 'string' && result.startsWith('0x')) {
-      balance = BigInt(result);
-    } else {
-      throw new Error('Unexpected balance format');
-    }
-  } catch (e) {
-    console.error('Failed to get balance:', e);
-    balance = await deployer.provider.getBalance(deployerAddress);
+  // Method 2: Provider getBalance
+  const providerBalance = await westendProvider.getBalance(deployerAddress);
+  console.log('Provider balance in WND:', ethers.formatEther(providerBalance));
+
+  // Use RPC balance as it seems more reliable
+  const balance = rpcBalance;
+  console.log("\nFinal deployer balance:", ethers.formatEther(balance), symbol);
+
+  if (balance === 0n) {
+    throw new Error(`No ${symbol} balance found. Please ensure the account is funded.`);
   }
-  console.log("Deployer balance:", ethers.formatEther(balance), symbol);
 
-  const nonce = await deployer.provider.getTransactionCount(deployerAddress);
+  const nonce = await westendProvider.getTransactionCount(deployerAddress);
   console.log("Current nonce:", nonce);
 
   // Set gas parameters from hardhat config for Westend Asset Hub
-  const gasPrice = 50000000000n;  // 50 gwei, lowered to avoid bans
+  const gasPrice = 100000000000n;  // 100 gwei as per config
   const gasLimit = 5000000; // Use config gas limit
   
   // First check if we can estimate gas
-  const gasEstimate = await deployer.provider.estimateGas({
+  const gasEstimate = await westendProvider.estimateGas({
     from: deployerAddress,
     data: pvmBytecode
   }).catch(e => {
@@ -77,8 +90,8 @@ async function main() {
     gasPrice: gasPrice,
     gasLimit: gasLimit,
     value: 0,
-    chainId: 420420421n, // Explicit chainId
-    type: 2 // EIP-1559 transaction type
+    type: 0, // Legacy transaction type
+    chainId: 420420421n // Explicit chainId
   };
   
   console.log("Gas price:", ethers.formatUnits(gasPrice, "gwei"), "gwei");
@@ -161,9 +174,9 @@ async function main() {
       await new Promise(resolve => setTimeout(resolve, retryDelay));
       
       // Update nonce
-      tx.nonce = await deployer.provider.getTransactionCount(deployerAddress, 'latest');
+      tx.nonce = await westendProvider.getTransactionCount(deployerAddress, 'latest');
       console.log('Updated nonce to:', tx.nonce);
-      console.log(`Increasing gas price to ${ethers.formatUnits(tx.gasPrice, 'gwei')} gwei`);
+      console.log(`Gas price: ${ethers.formatUnits(tx.gasPrice, 'gwei')} gwei`);
       console.log(`New gas limit: ${tx.gasLimit}`);
       console.log(`Estimated cost: ${ethers.formatEther(tx.gasPrice * BigInt(tx.gasLimit))} WND`);
     }
