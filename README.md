@@ -106,21 +106,35 @@ npm run deploy:eth
 # This will deploy:
 # - LendingPool: Main lending functionality
 # - LendingPoolBridge: Cross-chain bridge logic
-# - PriceOracle: Price feed management
-# - MockERC20: Test token
+# - PriceOracle (EVM version): Price feed management for Ethereum operations
+#   Compiled with compile:evm, deployed as EVM bytecode
+# - MockERC20: Test token for simulating bridgeable assets during development
+#   This is just for testing, not part of the production bridge
 
 # 2. Deploy supporting contracts to Westend Asset Hub
 npm run deploy:westend
 
 # This will deploy:
 # - WrappedToken (deploy:wrapped-token): For cross-chain asset representation
+#   This is the actual bridge token that represents Ethereum assets on Westend
+#   Compiled to PVM for Westend compatibility
 #   Address saved to deployments/wrapped-token.json
-# - PriceOracle (deploy:price-oracle): For price feed integration
+# - PriceOracle (PVM version): Price feed integration for Westend operations
+#   Compiled with compile:pvm, deployed as PVM bytecode
 #   Address saved to deployments/polkadot-contracts.json
 
 
 ## Network Configuration
 
+### Deployment Keys
+The same private key is used to deploy to both networks, but it's represented with different address formats:
+- Ethereum (Sepolia): `0x83De04f1aad8ABF1883166B14A29c084b7B8AB59` (EVM address format)
+- Westend Asset Hub: `5CLjhrXUVwZ6TE5JtinC4Ke6Y5BWb1FNVneaVcKFdphcefSv` (Substrate SS58 address format)
+
+### Sepolia (Ethereum Testnet)
+- Chain ID: 11155111
+- Currency Symbol: ETH
+- Block Explorer: https://sepolia.etherscan.io
 
 ### Westend Asset Hub
 - RPC URL: https://westend-asset-hub-eth-rpc.polkadot.io
@@ -159,25 +173,40 @@ The rest of the contracts, including LendingPool.sol and LendingPoolBridge.sol, 
 
 ## Development
 
-### Local Development
-```bash
-# Start local hardhat node with PolkaVM
-npx hardhat node
-
-# Deploy to local network
-npx hardhat run scripts/deploy.ts --network localNode
-```
-
-
 ### Testing
 ```bash
 # Run contract tests
-npx hardhat test
+npm run test
 ```
 
-### Performance Comparison
+### Deployment Scripts
 
-The performance of running contracts on Ethereum versus Westend Asset Hub is different. Ethereum is more expensive and slower, while Westend Asset Hub is faster and cheaper.
+The project uses separate deployment scripts for each network:
+
+1. Ethereum (Sepolia) Deployment:
+```bash
+npm run deploy:eth  # Deploys LendingPool, LendingPoolBridge, PriceOracle (EVM), MockERC20
+```
+
+2. Westend Asset Hub Deployment:
+```bash
+npm run deploy:wrapped-token  # Deploys WrappedToken
+npm run deploy:price-oracle   # Deploys PriceOracle (PVM)
+# Or deploy both with:
+npm run deploy:westend
+```
+
+### Network Comparison
+
+Ethereum (Sepolia):
+- Uses standard EVM bytecode
+- Higher gas costs but more established ecosystem
+- Contracts: LendingPool, LendingPoolBridge, PriceOracle (EVM), MockERC20
+
+Westend Asset Hub:
+- Uses PVM (PolkaVM) bytecode
+- Lower fees and faster finality
+- Contracts: WrappedToken, PriceOracle (PVM)
 
 ## License
 
