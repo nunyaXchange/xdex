@@ -59,7 +59,7 @@ async function main() {
   console.log("Current nonce:", nonce);
 
   // Set gas parameters from hardhat config for Westend Asset Hub
-  const gasPrice = 100000000000n;  // 100 gwei as per config
+  const gasPrice = 50000000000n;  // 50 gwei, lowered to avoid bans
   const gasLimit = 5000000; // Use config gas limit
   
   // First check if we can estimate gas
@@ -77,8 +77,8 @@ async function main() {
     gasPrice: gasPrice,
     gasLimit: gasLimit,
     value: 0,
-    type: 0, // Legacy transaction type
-    chainId: 420420421n // Explicit chainId
+    chainId: 420420421n, // Explicit chainId
+    type: 2 // EIP-1559 transaction type
   };
   
   console.log("Gas price:", ethers.formatUnits(gasPrice, "gwei"), "gwei");
@@ -89,9 +89,10 @@ async function main() {
   const maxTimeout = 180000; // 180 seconds timeout from config
   let attempt = 0;
 
-  // Initial delay before first attempt
-  console.log('Waiting 10 seconds before first attempt...');
-  await new Promise(resolve => setTimeout(resolve, 10000));
+  // Initial delay before first attempt with random jitter
+  const initialDelay = 30000 + Math.floor(Math.random() * 5000);
+  console.log(`Waiting ${Math.round(initialDelay/1000)} seconds before first attempt...`);
+  await new Promise(resolve => setTimeout(resolve, initialDelay));
 
   while (attempt < maxRetries) {
     try {
@@ -154,9 +155,10 @@ async function main() {
         throw new Error(`Failed to deploy after ${maxRetries} attempts: ${errorMessage}`);
       }
       
-      // Add delay before retry
-      console.log(`Waiting 10 seconds before next attempt ${attempt + 1}/${maxRetries}...`);
-      await new Promise(resolve => setTimeout(resolve, 10000));
+      // Add delay with jitter before retry
+      const retryDelay = 30000 + Math.floor(Math.random() * 5000);
+      console.log(`Waiting ${Math.round(retryDelay/1000)} seconds before next attempt ${attempt + 1}/${maxRetries}...`);
+      await new Promise(resolve => setTimeout(resolve, retryDelay));
       
       // Update nonce
       tx.nonce = await deployer.provider.getTransactionCount(deployerAddress, 'latest');
