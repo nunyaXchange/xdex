@@ -12,8 +12,6 @@ dotenv.config();
 task("compile:pvm", "Compiles contracts to PVM using resolc")
   .addParam("contract", "The name of the contract to compile")
   .setAction(async (taskArgs, hre) => {
-    // First compile with local solc
-    const solcPath = path.join(process.cwd(), "bin", "solc");
     const contractPath = path.join(process.cwd(), "contracts", `${taskArgs.contract}.sol`);
     const resolcPath = path.join(process.cwd(), "bin", "resolc");
     const pvmDir = path.join(process.cwd(), "artifacts-pvm");
@@ -25,7 +23,7 @@ task("compile:pvm", "Compiles contracts to PVM using resolc")
     }
 
     try {
-      // First flatten the contract
+      // First flatten the contract since resolc doesn't handle imports
       console.log("Flattening contract...");
       const flattenedContents = await hre.run("flatten:get-flattened-sources", {
         files: [contractPath]
@@ -39,30 +37,7 @@ task("compile:pvm", "Compiles contracts to PVM using resolc")
       fs.writeFileSync(flattenedPath, flattenedContents);
       console.log("Contract flattened successfully");
 
-      // Compile flattened contract with solc
-      console.log("Compiling with solc...");
-      const solcResult = spawnSync(solcPath, [
-        flattenedPath,
-        "--bin",
-        "--abi",
-        "--optimize",
-        "--overwrite",
-        "--metadata",
-        "--metadata-literal"
-      ]);
-
-      if (solcResult.error) {
-        throw solcResult.error;
-      }
-
-      // Check if solc compilation was successful
-      if (solcResult.status !== 0) {
-        throw new Error(`solc compilation failed: ${solcResult.stderr.toString()}`);
-      }
-
-      console.log("Contract compiled successfully with solc");
-
-      // Now compile with resolc
+      // Compile with resolc directly (it includes its own Solidity compiler)
       console.log("Compiling with resolc...");
       const binPath = path.join(process.cwd(), "bin");
       const env = {

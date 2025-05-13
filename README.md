@@ -44,7 +44,7 @@ rm -rf node_modules
 npm install
 ```
 
-2. Resolc binary for WASM compilation:
+2. Resolc binary for PVM compilation:
    - Download the latest resolc binary from [Revive releases](https://github.com/paritytech/revive/releases)
    - For macOS: Download `resolc-universal-apple-darwin`
    - For Linux: Download `resolc-x86_64-unknown-linux-musl`
@@ -56,10 +56,7 @@ npm install
 curl -L https://github.com/paritytech/revive/releases/download/v0.1.0-dev.16/resolc-universal-apple-darwin -o bin/resolc && xattr -c bin/resolc && chmod +x bin/resolc
 ```
 
-3. Solc binary
-
-```bash
-./scripts/download-solc.sh
+3. Configure Environment:
 ```
 
 4. Configure Environment:
@@ -85,18 +82,27 @@ rm -rf cache cache-pvm artifacts artifacts-pvm
 ```
 
 ```bash
-# Setup compilers (make solc and resolc executable)
+# Setup PVM compiler (make resolc executable)
 chmod +x scripts/setup-compilers.sh && ./scripts/setup-compilers.sh
 ```
 
 ```bash
-# Compile contracts for Ethereum deployment (EVM bytecode)
+# Compilation Process
+
+## For Ethereum (EVM)
+# Regular Hardhat compilation that handles imports automatically
 # If you see "Nothing to compile", it means the contracts haven't changed
 # Use the clear cache command above to force recompilation
 npm run compile:evm
 
-# Compile contracts for Westend Asset Hub deployment (PVM bytecode)
-# This uses resolc to convert Solidity to PVM bytecode
+## For Westend Asset Hub (PVM)
+# This is a two-step process:
+# 1. Contracts are flattened (all imports combined into one file)
+# 2. resolc compiles the flattened Solidity directly to PVM bytecode
+#
+# Note: resolc includes its own Solidity compiler and converts
+# the output directly to PVM format. Flattening is only needed
+# because resolc doesn't handle imports directly.
 npx hardhat compile:pvm --contract PriceOracle  # Compile PriceOracle to PVM
 npx hardhat compile:pvm --contract WrappedToken # Compile WrappedToken to PVM
 
