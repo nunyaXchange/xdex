@@ -130,7 +130,7 @@ npm run deploy:westend
 #   Address saved to deployments/wrapped-token.json
 # - PriceOracle (PVM version): Price feed integration for Westend operations
 #   Compiled with compile:pvm, deployed as PVM bytecode
-#   Address saved to deployments/polkadot-contracts.json
+#   Address saved to deployments/price-oracle.json
 ```
 
 ## Network Configuration

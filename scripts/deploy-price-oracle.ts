@@ -39,7 +39,7 @@ async function main() {
   console.log("PriceOracle deployed to:", contractAddress);
 
   // Save deployment info
-  const deploymentPath = path.join(__dirname, "../deployments/polkadot-contracts.json");
+  const deploymentPath = path.join(__dirname, "../deployments/price-oracle.json");
   fs.writeFileSync(
     deploymentPath,
     JSON.stringify(
@@ -53,7 +53,7 @@ async function main() {
     )
   );
 
-  console.log("Deployment info saved to deployments/polkadot-contracts.json");
+  console.log("Deployment info saved to deployments/price-oracle.json");
 }
 
 main()

@@ -1,4 +1,4 @@
-npx hardhat run scripts/deploy-polkadot.ts --network westendAssetHub
+npx hardhat run scripts/deploy-price-oracle.ts --network westendAssetHub
 Deployer address: 5CLjhrXUVwZ6TE5JtinC4Ke6Y5BWb1FNVneaVcKFdphcefSv
 Connecting to Westend Asset Hub...
 2025-05-12 10:44:06        REGISTRY: Unknown signed extensions StorageWeightReclaim found, treating them as no-effect
