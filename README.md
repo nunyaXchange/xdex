@@ -175,9 +175,15 @@ The rest of the contracts, including LendingPool.sol and LendingPoolBridge.sol, 
 
 ### Testing
 ```bash
-# Run contract tests
+# Run contract tests on local Hardhat network
 npm run test
 ```
+
+Tests are run on a local Hardhat network, not on any testnet. This provides:
+- Fast test execution
+- Clean state for each test
+- Ability to manipulate blockchain time
+- Free test transactions
 
 ### Deployment Scripts
 
