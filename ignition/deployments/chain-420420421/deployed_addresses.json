@@ -1,6 +1,0 @@
-{
-  "MyTokenModule#MyToken": "0x1665f962211B7320ca9Bb1E66Fd16a19f6eA3815",
-  "LockModule#Lock": "0x7FDB72E0A3e560be14FF23a5E528078CA3c50804",
-  "SupplyChainVerifierModule#SupplyChainVerifier": "0x81d4fF6691fefd23BD6A8da952BEeAfDDceFc493",
-  "EscrowModule#Escrow": "0xF610e7C268D5ac1F2C77a079273f3BE377e4E7AA"
-}
