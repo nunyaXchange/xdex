@@ -98,8 +98,8 @@ async function main() {
   console.log("Using nonce:", nonce);
 
   // Set gas parameters from hardhat config for Westend Asset Hub
-  const gasPrice = 100000000000n;  // 100 gwei as per config
-  const gasLimit = 15000000; // Increased gas limit based on actual usage
+  const gasPrice = 10000000000n;  // 10 gwei
+  const gasLimit = 10000000; // Reduced gas limit
   
   // First check if we can estimate gas
   const gasEstimate = await westendProvider.estimateGas({
@@ -116,7 +116,7 @@ async function main() {
     gasPrice: gasPrice,
     gasLimit: gasLimit,
     value: 0,
-    type: 0, // Legacy transaction type
+    type: 2, // EIP-1559 transaction type
     chainId: 420420421n // Explicit chainId
   };
 

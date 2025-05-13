@@ -106,13 +106,10 @@ task("compile:pvm", "Compiles contracts to PVM using resolc")
         '--include-path', 'node_modules',
         '--include-path', 'node_modules/@openzeppelin',
         '--solc', solcPath,
-        '-O1',  // Lower optimization level for better compatibility
-        // "If the contract uses more stack memory than configured, it will compile fine but eventually revert execution at runtime!"
-        // Reference: https://contracts.polkadot.io/revive_compiler/usage
-        '--stack-size', '65536',  // Double the default stack size
-        // "If the contract uses more heap memory than configured, it will compile fine but eventually revert execution at runtime!"
-        // Reference: https://contracts.polkadot.io/revive_compiler/usage
-        '--heap-size', '131072',  // Double the default heap size
+        '-O0',  // Disable optimization for maximum compatibility
+        // Use default stack and heap sizes for better compatibility
+        '--stack-size', '32768',
+        '--heap-size', '65536',
         '--bin', // Output bytecode
         '--output-dir', pvmDir,
         '--overwrite'  // Allow overwriting existing files
@@ -174,11 +171,11 @@ const config: HardhatUserConfig = {
       url: "https://westend-asset-hub-eth-rpc.polkadot.io",
       accounts: process.env.WESTEND_HUB_PK ? [process.env.WESTEND_HUB_PK] : [],
       chainId: 420420421,
-      gasPrice: 100000000000,  // 100 gwei
-      timeout: 180000,         // 180 seconds
-      gas: 15000000,          // Much higher gas limit based on actual usage
+      gasPrice: 5000000000,  // 5 gwei
+      timeout: 300000,       // 300 seconds
+      gas: 5000000,         // Lower gas limit
       allowUnlimitedContractSize: true,
-      blockGasLimit: 15000000  // Higher block gas limit
+      blockGasLimit: 5000000
     },
     sepolia: {
       url: process.env.SEPOLIA_URL,

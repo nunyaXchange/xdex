@@ -158,8 +158,11 @@ npm run deploy:eth
 # - MockERC20: Test token for simulating bridgeable assets during development
 #   This is just for testing, not part of the production bridge
 
-# 2. Deploy supporting contracts to Westend Asset Hub
+# 2. Deploy supporting contracts to Westend Asset Hub using ethers.js
 npm run deploy:westend
+
+# 2a. Alternative deployment using Polkadot.js API instead of ethers.js
+npm run deploy:westend-x
 
 # This will deploy:
 # - WrappedToken (deploy:wrapped-token): For cross-chain asset representation

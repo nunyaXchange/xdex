@@ -2,12 +2,20 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title WrappedToken - A token for wrapping assets on Westend Asset Hub
-/// @custom:substrate-pallet contracts
-contract WrappedToken is ERC20, Ownable {
-    constructor() ERC20("Wrapped Asset", "WASSET") Ownable(msg.sender) {}
+/// @custom:substrate-pallet pallet_contracts
+contract WrappedToken is ERC20 {
+    address public owner;
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Not owner");
+        _;
+    }
+
+    constructor() ERC20("Wrapped Asset", "WASSET") {
+        owner = msg.sender;
+    }
 
     /// @notice Mint new tokens
     /// @param to The address to mint tokens to

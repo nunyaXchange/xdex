@@ -8,8 +8,10 @@
     "compile:pvm": "hardhat compile:pvm",
     "deploy:eth": "hardhat run scripts/deploy-ethereum.ts --network sepolia",
     "deploy:wrapped-token": "hardhat run scripts/deploy-wrapped-token.ts --network westendAssetHub",
+    "deploy:wrapped-token-x": "hardhat run scripts/deploy-wrapped-token-x.ts --network westendAssetHub",
     "deploy:price-oracle": "hardhat run scripts/deploy-price-oracle.ts --network westendAssetHub",
     "deploy:westend": "npm run deploy:wrapped-token && npm run deploy:price-oracle",
+    "deploy:westend-x": "npm run deploy:wrapped-token-x && npm run deploy:price-oracle-x",
     "deploy": "npm run deploy:eth && npm run deploy:westend",
     "test": "hardhat test"
   },
