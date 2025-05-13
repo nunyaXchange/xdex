@@ -183,6 +183,14 @@ Contracts deployed to Westend can be verified on:
 - https://polkadot.js.org/apps/?rpc=wss%3A%2F%2Fwestend-rpc.polkadot.io#/explorer
 ```
 
+Troubleshooting: If the transaction is reverting (status: 0) rather than being rejected suggests the PVM bytecode format is valid enough to be accepted, but something else in the execution is failing.
+
+6. Analyse PVM Bytecode format
+
+```bash
+xxd -l 64 artifacts-pvm/WrappedToken.flattened.sol:WrappedToken.pvm
+```
+
 ## Network Configuration
 
 ### Deployment Keys

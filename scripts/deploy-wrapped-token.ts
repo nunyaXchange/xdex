@@ -47,33 +47,59 @@ async function main() {
   const network = await westendProvider.getNetwork();
   const symbol = network.chainId === 420420421n ? "WND" : "ETH";
   
-  // Get balance using both methods for debugging
-  console.log('Getting balance for address:', deployerAddress);
+  // Get balance with retries
+  const balanceMaxRetries = 3;
+  let balance = 0n;
+  let balanceAttempt = 0;
   
-  // Method 1: Direct RPC call
-  const rpcResult = await westendProvider.send('eth_getBalance', [deployerAddress, 'latest']);
-  console.log('RPC balance result:', rpcResult);
-  const rpcBalance = BigInt(rpcResult);
-  console.log('RPC balance in WND:', ethers.formatEther(rpcBalance));
+  while (balanceAttempt < balanceMaxRetries && balance === 0n) {
+    if (balanceAttempt > 0) {
+      // Wait 2 seconds between retries
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+    
+    try {
+      const rpcResult = await westendProvider.send('eth_getBalance', [deployerAddress, 'latest']);
+      balance = BigInt(rpcResult);
+    } catch (e) {
+      console.error('RPC balance check failed, retrying...');
+    }
+    
+    balanceAttempt++;
+  }
 
-  // Method 2: Provider getBalance
-  const providerBalance = await westendProvider.getBalance(deployerAddress);
-  console.log('Provider balance in WND:', ethers.formatEther(providerBalance));
-
-  // Use RPC balance as it seems more reliable
-  const balance = rpcBalance;
-  console.log("\nFinal deployer balance:", ethers.formatEther(balance), symbol);
+  console.log("Deployer balance:", ethers.formatEther(balance), symbol);
 
   if (balance === 0n) {
     throw new Error(`No ${symbol} balance found. Please ensure the account is funded.`);
   }
 
-  const nonce = await westendProvider.getTransactionCount(deployerAddress);
-  console.log("Current nonce:", nonce);
+  // Function to get a fresh nonce
+  async function getFreshNonce() {
+    // Wait for any pending transactions
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    
+    // Get nonces from multiple blocks to ensure freshness
+    const [latestNonce, pendingNonce] = await Promise.all([
+      westendProvider.getTransactionCount(deployerAddress, 'latest'),
+      westendProvider.getTransactionCount(deployerAddress, 'pending')
+    ]);
+    
+    // Get the block number to verify chain progress
+    const blockNumber = await westendProvider.getBlockNumber();
+    console.log(`Current block: ${blockNumber}, Latest nonce: ${latestNonce}, Pending nonce: ${pendingNonce}`);
+    
+    // Use highest nonce and add 1 to ensure freshness
+    return Math.max(latestNonce, pendingNonce);
+  }
+
+  // Get fresh nonce
+  const nonce = await getFreshNonce();
+  console.log("Using nonce:", nonce);
 
   // Set gas parameters from hardhat config for Westend Asset Hub
   const gasPrice = 100000000000n;  // 100 gwei as per config
-  const gasLimit = 5000000; // Use config gas limit
+  const gasLimit = 15000000; // Increased gas limit based on actual usage
   
   // First check if we can estimate gas
   const gasEstimate = await westendProvider.estimateGas({
@@ -93,6 +119,18 @@ async function main() {
     type: 0, // Legacy transaction type
     chainId: 420420421n // Explicit chainId
   };
+
+  // Wait for chain to progress before sending transaction
+  const currentBlock = await westendProvider.getBlockNumber();
+  console.log(`Waiting for new block. Current block: ${currentBlock}`);
+  
+  let newBlock = currentBlock;
+  while (newBlock <= currentBlock) {
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    newBlock = await westendProvider.getBlockNumber();
+  }
+  
+  console.log(`Chain progressed to block ${newBlock}. Proceeding with deployment...`);
   
   console.log("Gas price:", ethers.formatUnits(gasPrice, "gwei"), "gwei");
   console.log("Gas limit:", gasLimit);
@@ -173,9 +211,21 @@ async function main() {
       console.log(`Waiting ${Math.round(retryDelay/1000)} seconds before next attempt ${attempt + 1}/${maxRetries}...`);
       await new Promise(resolve => setTimeout(resolve, retryDelay));
       
-      // Update nonce
-      tx.nonce = await westendProvider.getTransactionCount(deployerAddress, 'latest');
-      console.log('Updated nonce to:', tx.nonce);
+      // Get completely fresh nonce for retry
+      tx.nonce = await getFreshNonce();
+      console.log('Updated to fresh nonce:', tx.nonce);
+      
+      // Wait for chain to progress
+      const retryCurrentBlock = await westendProvider.getBlockNumber();
+      console.log(`Waiting for new block before retry. Current block: ${retryCurrentBlock}`);
+      
+      let retryNewBlock = retryCurrentBlock;
+      while (retryNewBlock <= retryCurrentBlock) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        retryNewBlock = await westendProvider.getBlockNumber();
+      }
+      
+      console.log(`Chain progressed to block ${retryNewBlock}. Proceeding with retry...`);
       console.log(`Gas price: ${ethers.formatUnits(tx.gasPrice, 'gwei')} gwei`);
       console.log(`New gas limit: ${tx.gasLimit}`);
       console.log(`Estimated cost: ${ethers.formatEther(tx.gasPrice * BigInt(tx.gasLimit))} WND`);

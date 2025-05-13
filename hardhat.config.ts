@@ -48,7 +48,9 @@ task("compile:pvm", "Compiles contracts to PVM using resolc")
         '--include-path', 'node_modules',
         '--include-path', 'node_modules/@openzeppelin',
         '--solc', solcPath,
-        '-O3',  // Best performance optimization
+        // '-O3',  // Best performance optimization
+        // '-O1',  // Lower optimization level for better compatibility
+        // No optimization for maximum compatibility
         '--bin', // Output bytecode
         '--output-dir', pvmDir,
         '--overwrite'  // Allow overwriting existing files
@@ -112,7 +114,7 @@ const config: HardhatUserConfig = {
       chainId: 420420421,
       gasPrice: 100000000000,  // 100 gwei
       timeout: 180000,         // 180 seconds
-      gas: 5000000,           // Higher fixed gas limit
+      gas: 15000000,          // Much higher gas limit based on actual usage
       allowUnlimitedContractSize: true,
       blockGasLimit: 15000000  // Higher block gas limit
     },
