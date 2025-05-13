@@ -1,7 +1,7 @@
 {
-  "name": "hardhat-example",
+  "name": "hardhat-dex",
   "version": "1.0.0",
-  "description": "",
+  "description": "Cross-chain DEX using Ethereum (Sepolia) and Westend Asset Hub with PVM integration",
   "main": "index.js",
   "scripts": {
     "compile:evm": "hardhat compile",
