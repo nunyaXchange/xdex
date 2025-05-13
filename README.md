@@ -57,9 +57,6 @@ curl -L https://github.com/paritytech/revive/releases/download/v0.1.0-dev.16/res
 ```
 
 3. Configure Environment:
-```
-
-4. Configure Environment:
 Run `cp .env.example .env` and then modify the `.env` file with the following variables:
 ```
 # Ethereum Configuration
@@ -69,7 +66,6 @@ ETHERSCAN_API_KEY=your_etherscan_api_key  # Optional, for contract verification
 
 # Westend Asset Hub Configuration
 WESTEND_HUB_PK=your_westend_private_key  # Private key in hex format (with or without 0x prefix)
-WESTEND_WRAPPED_TOKEN_ADDRESS=            # Will be set after deploying WrappedToken
 ```
 
 5. PolkaVM binaries should be in the `bin` directory from the documentation
@@ -222,6 +218,35 @@ Westend Asset Hub:
 - Uses PVM (PolkaVM) bytecode
 - Lower fees and faster finality
 - Contracts: WrappedToken, PriceOracle (PVM)
+
+### Contract Verification
+
+#### Ethereum (Sepolia)
+Contracts are automatically verified on Etherscan using the `@nomicfoundation/hardhat-toolbox` plugin.
+
+#### Westend Asset Hub
+Contracts need to be verified manually on Subscan. The deployment scripts will provide instructions, but here's the process:
+
+1. After deployment, find the flattened contract source in `artifacts-pvm/`:
+   - For WrappedToken: `artifacts-pvm/WrappedToken.flattened.sol`
+   - For PriceOracle: `artifacts-pvm/PriceOracle.flattened.sol`
+
+2. Go to [Subscan Contract Verification](https://westend.subscan.io/tools/verify_contract)
+
+3. Fill in the verification details:
+   - Contract Address: (from deployment output)
+   - Contract Name: WrappedToken or PriceOracle
+   - Compiler Version: v0.8.20
+   - Optimization: Enabled, 200 runs
+   - Source Code: Paste the content from the flattened file
+
+4. Submit for verification
+
+Note: The flattened source is automatically generated during compilation because resolc doesn't handle imports directly. The `compile:pvm` task:
+1. Flattens the contract (combines all imports into one file)
+2. Uses resolc to compile the flattened Solidity directly to PVM bytecode
+
+This ensures the verified source code exactly matches what was deployed.
 
 ## License
 

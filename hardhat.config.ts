@@ -2,16 +2,20 @@ import { HardhatUserConfig, task } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "@nomicfoundation/hardhat-ignition";
 import * as dotenv from "dotenv";
-import { spawnSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
+import { spawnSync } from "child_process";
+
+interface TaskArgs {
+  contract: string;
+}
 
 dotenv.config();
 
 // Task to compile Solidity to PVM using resolc binary
 task("compile:pvm", "Compiles contracts to PVM using resolc")
   .addParam("contract", "The name of the contract to compile")
-  .setAction(async (taskArgs, hre) => {
+  .setAction(async (taskArgs: TaskArgs, hre) => {
     const contractPath = path.join(process.cwd(), "contracts", `${taskArgs.contract}.sol`);
     const resolcPath = path.join(process.cwd(), "bin", "resolc");
     const pvmDir = path.join(process.cwd(), "artifacts-pvm");
@@ -77,9 +81,8 @@ task("compile:pvm", "Compiles contracts to PVM using resolc")
         throw resolcResult.error;
       }
 
-      // Check if resolc compilation was successful
       if (resolcResult.status !== 0) {
-        throw new Error(`resolc compilation failed: ${resolcResult.stderr.toString()}`);
+        throw new Error(`resolc failed with status ${resolcResult.status}\n${resolcResult.stderr}`);
       }
 
       console.log("Contract compiled successfully with resolc");
@@ -100,6 +103,7 @@ const config: HardhatUserConfig = {
       }
     }
   },
+
   paths: {
     sources: "./contracts",
     tests: "./test",

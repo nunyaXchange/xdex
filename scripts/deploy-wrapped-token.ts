@@ -54,6 +54,18 @@ async function main() {
   );
 
   console.log("Deployment info saved to deployments/wrapped-token.json");
+
+  // Prepare verification data for Subscan
+  const flattenedSource = fs.readFileSync(path.join(process.cwd(), "artifacts-pvm", `WrappedToken.flattened.sol`), 'utf8');
+  
+  console.log("\nTo verify contract on Subscan:")
+  console.log("1. Go to https://westend.subscan.io/tools/verify_contract")
+  console.log(`2. Contract Address: ${wrappedTokenAddress}`)
+  console.log(`3. Contract Name: WrappedToken`)
+  console.log(`4. Compiler Version: v0.8.20`)
+  console.log(`5. Optimization: Enabled, 200 runs`)
+  console.log(`6. Paste the flattened source code from: artifacts-pvm/WrappedToken.flattened.sol`)
+  console.log("7. Submit for verification")
 }
 
 main()
