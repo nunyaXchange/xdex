@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "./openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "./openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title WrappedToken - A token for wrapping assets on Westend Asset Hub
 /// @custom:substrate-pallet contracts
 contract WrappedToken is ERC20, Ownable {
-    constructor() ERC20("Wrapped Asset", "WASSET") {}
+    constructor() ERC20("Wrapped Asset", "WASSET") Ownable(msg.sender) {}
 
     /// @notice Mint new tokens
     /// @param to The address to mint tokens to

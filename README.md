@@ -78,7 +78,12 @@ rm -rf cache cache-pvm artifacts artifacts-pvm
 ```
 
 ```bash
-# Setup PVM compiler (make resolc executable)
+# Solc binary
+./scripts/download-solc.sh
+```
+
+```bash
+# Setup compilers (make solc and resolc executable)
 chmod +x scripts/setup-compilers.sh && ./scripts/setup-compilers.sh
 ```
 

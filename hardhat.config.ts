@@ -16,6 +16,7 @@ dotenv.config();
 task("compile:pvm", "Compiles contracts to PVM using resolc")
   .addParam("contract", "The name of the contract to compile")
   .setAction(async (taskArgs: TaskArgs, hre) => {
+    const solcPath = path.join(process.cwd(), "bin", "solc");
     const contractPath = path.join(process.cwd(), "contracts", `${taskArgs.contract}.sol`);
     const resolcPath = path.join(process.cwd(), "bin", "resolc");
     const pvmDir = path.join(process.cwd(), "artifacts-pvm");
@@ -27,53 +28,23 @@ task("compile:pvm", "Compiles contracts to PVM using resolc")
     }
 
     try {
-      // First flatten the contract since resolc doesn't handle imports
-      console.log("Flattening contract...");
-      const flattenedContents = await hre.run("flatten:get-flattened-sources", {
-        files: [contractPath]
-      });
-
-      if (!flattenedContents) {
-        throw new Error("Failed to flatten contract");
-      }
-
-      // Write flattened contract
-      fs.writeFileSync(flattenedPath, flattenedContents);
-      console.log("Contract flattened successfully");
-
-      // Compile with resolc directly (it includes its own Solidity compiler)
+      // Compile with resolc directly
       console.log("Compiling with resolc...");
-      const binPath = path.join(process.cwd(), "bin");
-      const env = {
-        ...process.env,
-        PATH: `${binPath}:${process.env.PATH}`
-      };
-
-      // Create standard JSON input for resolc
-      const resolcInput = {
-        language: "Solidity",
-        sources: {
-          [flattenedPath]: {
-            content: fs.readFileSync(flattenedPath, 'utf8')
-          }
-        },
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 200
-          },
-          outputSelection: {
-            "*": {
-              "*": ["evm.bytecode", "abi"]
-            }
-          }
-        }
-      };
-
-      // Run resolc with JSON input through stdin
-      const resolcResult = spawnSync(resolcPath, ["--standard-json"], { 
-        input: JSON.stringify(resolcInput),
-        env,
+      
+      // Run resolc with proper import paths and local solc
+      const solcPath = path.join(process.cwd(), "bin", "solc");
+      const resolcResult = spawnSync(resolcPath, [
+        contractPath,
+        '--base-path', process.cwd(),
+        '--include-path', 'node_modules',
+        '--include-path', 'node_modules/@openzeppelin',
+        '--solc', solcPath,
+        '-O3',  // Best performance optimization
+        '--bin', // Output bytecode
+        '--output-dir', pvmDir,
+        '--overwrite'  // Allow overwriting existing files
+      ], { 
+        stdio: 'inherit',
         encoding: 'utf-8'
       });
 
@@ -82,7 +53,7 @@ task("compile:pvm", "Compiles contracts to PVM using resolc")
       }
 
       if (resolcResult.status !== 0) {
-        throw new Error(`resolc failed with status ${resolcResult.status}\n${resolcResult.stderr}`);
+        throw new Error(`resolc failed with status ${resolcResult.status}`);
       }
 
       console.log("Contract compiled successfully with resolc");
@@ -103,7 +74,6 @@ const config: HardhatUserConfig = {
       }
     }
   },
-
   paths: {
     sources: "./contracts",
     tests: "./test",

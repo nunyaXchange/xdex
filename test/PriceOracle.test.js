@@ -29,9 +29,8 @@ describe("PriceOracle", function () {
 
     it("Should not allow non-owner to update price", async function () {
       const price = ethers.parseEther("100");
-      await expect(
-        priceOracle.connect(user).updateAssetPrice(asset1.address, price)
-      ).to.be.revertedWith("Ownable: caller is not the owner");
+      await expect(priceOracle.connect(user).updateAssetPrice(asset1.address, price))
+        .to.be.revertedWithCustomError(priceOracle, 'OwnableUnauthorizedAccount');
     });
 
     it("Should not allow price update before minimum interval", async function () {
@@ -69,7 +68,6 @@ describe("PriceOracle", function () {
       const borrowedAmount = ethers.parseEther("50"); // 50 units of asset2 ($50)
 
       const ratio = await priceOracle.calculateCollateralRatio(
-        user.address,
         asset1.address,
         asset2.address,
         collateralAmount,
@@ -82,7 +80,6 @@ describe("PriceOracle", function () {
     it("Should revert if borrowed amount is zero", async function () {
       await expect(
         priceOracle.calculateCollateralRatio(
-          user.address,
           asset1.address,
           asset2.address,
           ethers.parseEther("1"),
@@ -96,7 +93,6 @@ describe("PriceOracle", function () {
 
       await expect(
         priceOracle.calculateCollateralRatio(
-          user.address,
           newAsset,
           asset2.address,
           ethers.parseEther("1"),

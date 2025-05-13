@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @custom:polkadot-runtime
 /// @custom:version 1.0.0
@@ -22,7 +22,7 @@ contract PriceOracle is Ownable {
     /// @custom:selector init
     /// @custom:payable
     /// @custom:mutates-storage
-    constructor() payable {}
+    constructor() payable Ownable(msg.sender) {}
 
     /// @custom:selector set
     /// @custom:mutates-storage
@@ -57,7 +57,6 @@ contract PriceOracle is Ownable {
     }
 
     function calculateCollateralRatio(
-        address user,
         address collateralAsset,
         address borrowedAsset,
         uint256 collateralAmount,
