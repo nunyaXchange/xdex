@@ -148,6 +148,12 @@ You can get test WND tokens from the [Westend Faucet](https://faucet.westend.net
    - Deployed using PolkaVM for Westend compatibility
 
 
+## Deployment
+
+Only PriceOracle.sol and WrappedToken.sol should be deployed to Westend AssetHub (PolkaVM).
+
+The rest of the contracts, including LendingPool.sol and LendingPoolBridge.sol, are deployed to Sepolia Ethereum or EVM-compatible networks.
+
 ## Development
 
 ### Local Development

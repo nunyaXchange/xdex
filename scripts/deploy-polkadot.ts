@@ -150,7 +150,7 @@ function handleDeploymentCallback(resolve: (address: string) => void, reject: (e
         JSON.stringify(
           {
             priceOracle: contractAddress,
-            network: 'westend-asset-hub',
+            network: 'westendAssetHub',
             timestamp: new Date().toISOString()
           },
           null,
