@@ -48,9 +48,9 @@ task("compile:pvm", "Compiles contracts to PVM using resolc")
         '--include-path', 'node_modules',
         '--include-path', 'node_modules/@openzeppelin',
         '--solc', solcPath,
-        // '-O3',  // Best performance optimization
-        // '-O1',  // Lower optimization level for better compatibility
-        // No optimization for maximum compatibility
+        '-O1',  // Lower optimization level for better compatibility
+        '--stack-size', '65536',  // Double the default stack size
+        '--heap-size', '131072',  // Double the default heap size
         '--bin', // Output bytecode
         '--output-dir', pvmDir,
         '--overwrite'  // Allow overwriting existing files
