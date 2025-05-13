@@ -30,6 +30,42 @@ The current price oracle implementation is centralized - prices are set by the c
 3. Implement price aggregation logic
 4. Add more safety checks on price validity
 
+#### Using the Price Oracle
+
+1. **Setting Asset Prices** (Owner Only):
+```javascript
+// Price must be in wei (18 decimals)
+const price = ethers.parseEther("100"); // $100
+await priceOracle.updateAssetPrice(assetAddress, price);
+```
+
+2. **Getting Asset Prices**:
+```javascript
+// Get latest price (reverts if price is inactive)
+const price = await priceOracle.getLatestPrice(assetAddress);
+
+// Check if price is active (older than 1 hour = inactive)
+const isActive = await priceOracle.isPriceActive(assetAddress);
+```
+
+3. **Calculating Collateral Ratio**:
+```javascript
+// Returns ratio in percentage (e.g., 200 = 200% or 2x)
+const ratio = await priceOracle.calculateCollateralRatio(
+    collateralAsset,  // address of collateral token
+    borrowedAsset,    // address of borrowed token
+    collateralAmount, // amount of collateral in wei
+    borrowedAmount    // amount borrowed in wei
+);
+```
+
+Key Features:
+- Prices are considered inactive after 1 hour
+- Only owner can update prices
+- Prices must be set in wei (18 decimals)
+- Collateral ratio is returned as percentage (e.g., 150 = 150%)
+- Reverts if borrowed amount is 0 or prices are inactive
+
 ## Setup
 
 Install Node.js (i.e. v22.14.0)
